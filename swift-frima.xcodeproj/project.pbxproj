@@ -21,7 +21,6 @@
 			membershipExceptions = (
 				Client/Info.plist,
 				Client/Info.plist.snippet.xml,
-				"xcshareddata/xcschemes/swift-frima.xcscheme",
 			);
 			target = 532D4EAA304A4B740072DF3C /* swift-frima */;
 		};
