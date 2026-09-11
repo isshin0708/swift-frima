@@ -3,11 +3,16 @@ import SwiftUI
 @main
 struct SwiftFrimaApp: App {
     private let api = NetworkClient(baseURL: URL(string: "http://127.0.0.1:8080")!)
+    @State private var auth = AuthViewModel()
 
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                HomeView(api: api)
+                if auth.isAuthenticated {
+                    HomeView(api: api, auth: auth)
+                } else {
+                    AuthView(viewModel: auth)
+                }
             }
         }
     }
@@ -15,6 +20,8 @@ struct SwiftFrimaApp: App {
 
 private struct HomeView: View {
     let api: NetworkClient
+    let auth: AuthViewModel
+
     private let demoItem = Item(
         id: UUID(),
         userId: UUID(),
@@ -32,8 +39,8 @@ private struct HomeView: View {
     var body: some View {
         List {
             Section("swift-frima") {
-                Text("ローカル起動OK")
-                    .font(.title2.bold())
+                Text("ログイン中: \(auth.currentUserEmail ?? "不明")")
+                    .font(.subheadline.bold())
                 Text("Vapor API: http://127.0.0.1:8080")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -41,17 +48,17 @@ private struct HomeView: View {
 
             Section("画面確認") {
                 NavigationLink("商品を出品") {
-                    ItemPostView(api: api, authTokenProvider: { "" })
+                    ItemPostView(api: api, authTokenProvider: { try await auth.accessToken() })
                 }
                 NavigationLink("購入画面") {
-                    CheckoutView(item: demoItem, api: api, authTokenProvider: { "" })
+                    CheckoutView(item: demoItem, api: api, authTokenProvider: { try await auth.accessToken() })
                 }
             }
 
             Section {
-                Text("※ 現在のClientにはSupabaseログイン画面がまだ含まれていません。上記画面の通信には認証トークンが必要です。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Button("ログアウト", role: .destructive) {
+                    Task { await auth.signOut() }
+                }
             }
         }
         .navigationTitle("swift-frima")
