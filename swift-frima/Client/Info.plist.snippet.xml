@@ -1,0 +1,8 @@
+<key>CFBundleDisplayName</key>
+<string>swift-frima</string>
+<key>CFBundleName</key>
+<string>swift-frima</string>
+<key>NSFaceIDUsageDescription</key>
+<string>決済時の本人確認およびアカウント安全保護のためにFace IDを使用します。</string>
+<key>STRIPE_PUBLISHABLE_KEY</key>
+<string>pk_test_xxx</string>

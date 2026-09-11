@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Xcode local/shared scheme containing environment secrets
+*.xcscheme
+.env*TAB
+*.envTAB
