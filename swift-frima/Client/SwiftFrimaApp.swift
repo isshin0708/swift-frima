@@ -53,6 +53,9 @@ private struct HomeView: View {
                 NavigationLink("購入画面") {
                     CheckoutView(item: demoItem, api: api, authTokenProvider: { try await auth.accessToken() })
                 }
+                NavigationLink("商品一覧") {
+                    ItemListView(api: api)
+                }
             }
 
             Section {
