@@ -15,4 +15,5 @@ func routes(_ app: Application) throws {
     try app.register(collection: ItemController())
     try app.register(collection: OrderController())
     try app.register(collection: StripeWebhookController())
+    try app.register(collection: LikeController())
 }

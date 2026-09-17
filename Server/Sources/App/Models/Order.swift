@@ -1,7 +1,7 @@
 import Fluent
 import Vapor
 
-final class OrderModel: Model, Content {
+final class OrderModel: Model, Content, @unchecked Sendable {
     static let schema = "orders"
 
     @ID(key: .id) var id: UUID?

@@ -7,7 +7,10 @@ struct ItemListView: View {
 
     @State private var viewModel: ItemListViewModel
 
-    init(api: NetworkClient, auth: AuthViewModel) {
+    init(
+        api: NetworkClient,
+        auth: AuthViewModel
+    ) {
         self.api = api
         self.auth = auth
 
@@ -19,9 +22,11 @@ struct ItemListView: View {
     var body: some View {
         Group {
             if viewModel.isLoading {
+
                 ProgressView("商品を読み込み中...")
 
             } else if let errorMessage = viewModel.errorMessage {
+
                 VStack(spacing: 12) {
                     Text("商品の取得に失敗しました")
                         .font(.headline)
@@ -38,32 +43,75 @@ struct ItemListView: View {
                 }
                 .padding()
 
-            } else if viewModel.items.isEmpty {
-                ContentUnavailableView(
-                    "商品がありません",
-                    systemImage: "bag",
-                    description: Text("現在出品されている商品はありません。")
-                )
-
             } else {
-                List(viewModel.items) { item in
-                    NavigationLink {
-                        ItemDetailView(
-                            item: item,
-                            api: api,
-                            authTokenProvider: {
-                                try await auth.accessToken()
-                            }
-                        )
-                    } label: {
-                        ItemCardView(item: item)
-                    }
-                }
+
+                productList
             }
         }
         .navigationTitle("商品一覧")
+        .searchable(
+            text: $viewModel.searchText,
+            prompt: "商品名で検索"
+        )
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker(
+                        "並び順",
+                        selection: $viewModel.sortOption
+                    ) {
+                        ForEach(
+                            ItemListViewModel.SortOption.allCases
+                        ) { option in
+                            Text(option.rawValue)
+                                .tag(option)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+            }
+        }
         .task {
             await viewModel.fetchItems()
+        }
+    }
+
+    private var productList: some View {
+
+        if viewModel.filteredItems.isEmpty {
+
+            return AnyView(
+                ContentUnavailableView(
+                    "商品がありません",
+                    systemImage: "bag",
+                    description: Text(
+                        viewModel.searchText.isEmpty
+                        ? "現在出品されている商品はありません。"
+                        : "「\(viewModel.searchText)」に一致する商品がありません。"
+                    )
+                )
+            )
+
+        } else {
+
+            return AnyView(
+                List(viewModel.filteredItems) { item in
+
+                    NavigationLink {
+
+                        ItemDetailView(
+                            item: item,
+                            api: api,
+                            auth: auth
+                        )
+
+                    } label: {
+
+                        ItemCardView(item: item)
+                    }
+                }
+            )
         }
     }
 }
