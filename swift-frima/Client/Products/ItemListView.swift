@@ -5,19 +5,12 @@ struct ItemListView: View {
     let api: NetworkClient
     let auth: AuthViewModel
 
-        @State private var viewModel: ItemListViewModel
+    @State private var viewModel: ItemListViewModel
 
-        init(api: NetworkClient, auth: AuthViewModel) {
-            self.api = api
-            self.auth = auth
-
-            _viewModel = State(
-                initialValue: ItemListViewModel(api: api)
-            )
-        }
-
-    init(api: NetworkClient) {
+    init(api: NetworkClient, auth: AuthViewModel) {
         self.api = api
+        self.auth = auth
+
         _viewModel = State(
             initialValue: ItemListViewModel(api: api)
         )
