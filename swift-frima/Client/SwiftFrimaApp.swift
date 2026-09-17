@@ -87,18 +87,14 @@ private struct HomeView: View {
             // MARK: - アカウント
             Section("アカウント") {
                 NavigationLink {
-                    Text("プロフィール画面")
-                        .navigationTitle("プロフィール")
-                } label: {
-                    Label("プロフィール", systemImage: "person.circle")
-                }
+                        MyProfileView(
+                            api: api,
+                            auth: auth
+                        )
+                    } label: {
+                        Label("プロフィール", systemImage: "person.circle")
+                    }
 
-                NavigationLink {
-                    Text("購入履歴")
-                        .navigationTitle("購入履歴")
-                } label: {
-                    Label("購入履歴", systemImage: "clock.arrow.circlepath")
-                }
             }
 
             // MARK: - ログアウト

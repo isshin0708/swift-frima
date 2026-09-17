@@ -18,6 +18,7 @@ struct ItemListView: View {
             initialValue: ItemListViewModel(api: api)
         )
     }
+    
 
     var body: some View {
         Group {
@@ -56,6 +57,23 @@ struct ItemListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+
+                    // カテゴリ
+                    Picker(
+                        "カテゴリ",
+                        selection: $viewModel.selectedCategory
+                    ) {
+                        ForEach(
+                            ItemListViewModel.CategoryOption.allCases
+                        ) { category in
+                            Text(category.name)
+                                .tag(category)
+                        }
+                    }
+
+                    Divider()
+
+                    // 並び順
                     Picker(
                         "並び順",
                         selection: $viewModel.sortOption
@@ -67,8 +85,9 @@ struct ItemListView: View {
                                 .tag(option)
                         }
                     }
+
                 } label: {
-                    Image(systemName: "arrow.up.arrow.down")
+                    Image(systemName: "line.3.horizontal.decrease.circle")
                 }
             }
         }
