@@ -7,6 +7,8 @@ import Supabase
 final class AuthViewModel {
     // MARK: - Properties
     private(set) var session: Session?
+    /// アプリ起動直後、保存済みセッションの確認が終わるまで true。
+    private(set) var isLoadingSession = true
 
     var errorMessage: String?
     var isBusy = false
@@ -37,11 +39,17 @@ final class AuthViewModel {
         } catch {
             session = nil
         }
+        isLoadingSession = false
     }
 
     // MARK: - Observe Authentication Changes
     private func observeAuthChanges() async {
-        for await (_, newSession) in supabase.auth.authStateChanges {
+        for await (event, newSession) in supabase.auth.authStateChanges {
+            // .initialSession は supabase-swift の既知の挙動で、保存済みセッションの
+            // リフレッシュに失敗すると nil が流れてくることがある。
+            // 初期状態は loadInitialSession() 側ですでに正しく取得済みなので、
+            // ここでは無視して上書きされないようにする。
+            if event == .initialSession { continue }
             session = newSession
         }
     }
@@ -54,7 +62,6 @@ final class AuthViewModel {
 
         do {
             _ = try await supabase.auth.signUp(email: email, password: password)
-            // メール確認が有効な設定の場合、確認が完了するまでセッションは発行されない
             session = try? await supabase.auth.session
         } catch {
             errorMessage = error.localizedDescription

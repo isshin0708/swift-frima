@@ -6,7 +6,18 @@ struct ItemController: RouteCollection {
     let marketService = MarketPriceService()
 
     func boot(routes: RoutesBuilder) throws {
+        // 商品一覧の閲覧はログイン不要(未認証でも見られるようにする)
+        routes.get("api", "items", use: list)
+        // 出品にはログインが必要
         routes.grouped(SupabaseAuthMiddleware()).post("api", "items", use: create)
+    }
+
+    func list(req: Request) async throws -> [Item] {
+        let records = try await ItemModel.query(on: req.db)
+            .filter(\.$status == "on_sale")
+            .sort(\.$createdAt, .descending)
+            .all()
+        return records.map(Self.toItem)
     }
 
     func create(req: Request) async throws -> ItemCreateResponse {
@@ -27,9 +38,25 @@ struct ItemController: RouteCollection {
         let record = ItemModel(userId: user.id, name: name, description: description, price: input.price, manufacturerSuggestedRetailPrice: market.manufacturerSuggestedRetailPrice, referencePrice: reference, categoryId: input.categoryId, status: status, imageUrl: input.imageUrl)
         try await record.create(on: req.db)
 
-        guard let id = record.id else { throw Abort(.internalServerError, reason: "商品IDの生成に失敗しました") }
-        let item = Item(id: id, userId: user.id, name: record.name, description: record.itemDescription, price: record.price, manufacturerSuggestedRetailPrice: record.manufacturerSuggestedRetailPrice, referencePrice: record.referencePrice, categoryId: record.categoryId, status: Item.ItemStatus(rawValue: record.status) ?? .pendingReview, imageUrl: record.imageUrl, createdAt: record.createdAt)
+        guard record.id != nil else { throw Abort(.internalServerError, reason: "商品IDの生成に失敗しました") }
+        let item = Self.toItem(record)
         let message = suspicious ? "市場相場の1.8倍以上のため審査待ちです。" : nil
         return ItemCreateResponse(item: item, isSuspiciousResale: suspicious, manufacturerSuggestedRetailPrice: market.manufacturerSuggestedRetailPrice, referencePrice: reference, message: message)
+    }
+
+    private static func toItem(_ record: ItemModel) -> Item {
+        Item(
+            id: record.id,
+            userId: record.userId,
+            name: record.name,
+            description: record.itemDescription,
+            price: record.price,
+            manufacturerSuggestedRetailPrice: record.manufacturerSuggestedRetailPrice,
+            referencePrice: record.referencePrice,
+            categoryId: record.categoryId,
+            status: Item.ItemStatus(rawValue: record.status) ?? .pendingReview,
+            imageUrl: record.imageUrl,
+            createdAt: record.createdAt
+        )
     }
 }
