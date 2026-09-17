@@ -173,3 +173,7 @@ public struct LikeStatusResponse: Codable, Sendable, Equatable {
         case likeCount = "like_count"
     }
 }
+
+public struct EmptyRequest: Codable, Sendable {
+    public init() {}
+}
