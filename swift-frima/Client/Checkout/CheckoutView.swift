@@ -325,8 +325,7 @@ struct CheckoutView: View {
 
                 do {
 
-                    let token =
-                        try await authTokenProvider()
+                    let token = try await auth.accessToken()
 
                     let status: PaymentStatusResponse =
                         try await api.get(
@@ -387,8 +386,7 @@ struct CheckoutView: View {
         Task {
 
             guard
-                let token =
-                    try? await authTokenProvider()
+                let token = try? await auth.accessToken()
             else {
                 return
             }
