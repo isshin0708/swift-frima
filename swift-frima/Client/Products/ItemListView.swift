@@ -103,9 +103,7 @@ struct ItemListView: View {
                         ItemDetailView(
                             item: item,
                             api: api,
-                            authTokenProvider: {
-                                try await auth.accessToken()
-                            }
+                            auth: auth
                         )
 
                     } label: {

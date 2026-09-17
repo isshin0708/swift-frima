@@ -3,10 +3,11 @@ import SwiftUI
 struct ItemDetailView: View {
     let item: Item
     let api: NetworkClient
-    let authTokenProvider: () async throws -> String
-    
+    let auth: AuthViewModel
+
     @State private var isLiked = false
     @State private var likeCount = 0
+
 
     var body: some View {
         ScrollView {
@@ -112,7 +113,9 @@ struct ItemDetailView: View {
                     CheckoutView(
                         item: item,
                         api: api,
-                        authTokenProvider: authTokenProvider
+                        authTokenProvider: {
+                            try await auth.accessToken()
+                        }
                     )
                 } label: {
                     Text("購入する")

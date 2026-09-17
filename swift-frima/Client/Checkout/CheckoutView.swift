@@ -9,7 +9,7 @@ struct CheckoutView: View {
 
     let api: NetworkClient
 
-    let authTokenProvider: () async throws -> String
+    let authTokenProvider: @Sendable () async throws -> String
 
     @State private var biometric = BiometricAuthManager()
 
