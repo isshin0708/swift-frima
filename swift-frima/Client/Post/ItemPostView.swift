@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ItemPostView: View {
     let api: NetworkClient
-    let authTokenProvider: () async throws -> String
+    let authTokenProvider: @Sendable () async throws -> String
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var priceString = ""
@@ -13,7 +13,7 @@ struct ItemPostView: View {
     @State private var resultMessage: String?
     @State private var market: MarketPriceService
 
-    init(api: NetworkClient, authTokenProvider: @escaping () async throws -> String) {
+    init(api: NetworkClient, authTokenProvider: @escaping @Sendable () async throws -> String) {
         self.api = api; self.authTokenProvider = authTokenProvider
         _market = State(initialValue: MarketPriceService(client: api))
     }
