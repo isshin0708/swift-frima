@@ -129,3 +129,47 @@ public struct PaymentStatusResponse: Codable, Sendable {
         case paidAt = "paid_at"
     }
 }
+
+public struct Like: Codable, Sendable, Equatable {
+    public let id: UUID
+    public let itemId: UUID
+    public let userId: UUID
+    public let createdAt: Date?
+
+    public init(
+        id: UUID,
+        itemId: UUID,
+        userId: UUID,
+        createdAt: Date? = nil
+    ) {
+        self.id = id
+        self.itemId = itemId
+        self.userId = userId
+        self.createdAt = createdAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case itemId = "item_id"
+        case userId = "user_id"
+        case createdAt = "created_at"
+    }
+}
+
+public struct LikeStatusResponse: Codable, Sendable, Equatable {
+    public let isLiked: Bool
+    public let likeCount: Int
+
+    public init(
+        isLiked: Bool,
+        likeCount: Int
+    ) {
+        self.isLiked = isLiked
+        self.likeCount = likeCount
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case isLiked = "is_liked"
+        case likeCount = "like_count"
+    }
+}

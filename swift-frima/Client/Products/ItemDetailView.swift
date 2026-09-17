@@ -4,6 +4,9 @@ struct ItemDetailView: View {
     let item: Item
     let api: NetworkClient
     let authTokenProvider: () async throws -> String
+    
+    @State private var isLiked = false
+    @State private var likeCount = 0
 
     var body: some View {
         ScrollView {
@@ -46,6 +49,17 @@ struct ItemDetailView: View {
                 Text("¥" + NSDecimalNumber(decimal: item.price).stringValue)
                     .font(.title2)
                     .fontWeight(.bold)
+
+                Button {
+                    // 次のステップでAPI処理を追加
+                } label: {
+                    HStack {
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                        Text("いいね")
+                        Text("\(likeCount)")
+                    }
+                    .font(.headline)
+                }
 
                 Divider()
 

@@ -114,3 +114,21 @@ public struct MarketPriceResult: Content, Sendable, Equatable {
         case manufacturerSuggestedRetailPrice = "manufacturer_suggested_retail_price"
     }
 }
+
+public struct LikeStatusResponse: Content, Sendable {
+    public let isLiked: Bool
+    public let likeCount: Int
+
+    public init(
+        isLiked: Bool,
+        likeCount: Int
+    ) {
+        self.isLiked = isLiked
+        self.likeCount = likeCount
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case isLiked = "is_liked"
+        case likeCount = "like_count"
+    }
+}

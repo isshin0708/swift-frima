@@ -7,7 +7,7 @@ struct CreateOrders: AsyncMigration {
             .id()
             .field("item_id", .uuid, .required, .references("items", "id"))
             .field("buyer_id", .uuid, .required)
-            .field("price", .sql(raw: "NUMERIC(12,2)"), .required)
+            .field("price", .sql(unsafeRaw: "NUMERIC(12,2)"), .required)
             .field("status", .string, .required)
             .field("payment_intent_id", .string)
             .field("paid_at", .datetime)
