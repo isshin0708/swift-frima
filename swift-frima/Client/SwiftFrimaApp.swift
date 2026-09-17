@@ -82,28 +82,6 @@ private struct HomeView: View {
                 } label: {
                     Label("商品を出品", systemImage: "plus.circle")
                 }
-
-                NavigationLink {
-                    CheckoutView(
-                        item: Item(
-                            id: UUID(),
-                            userId: UUID(),
-                            name: "swift-frima テスト商品",
-                            description: "ローカル起動確認用の商品です。",
-                            price: Decimal(1800),
-                            manufacturerSuggestedRetailPrice: nil,
-                            referencePrice: Decimal(1200),
-                            categoryId: 1,
-                            status: .onSale,
-                            imageUrl: nil,
-                            createdAt: Date()
-                        ),
-                        api: api,
-                        auth: auth
-                    )
-                } label: {
-                    Label("購入画面", systemImage: "cart")
-                }
             }
 
             // MARK: - アカウント
