@@ -2,6 +2,7 @@ import Vapor
 
 struct AuthenticatedUser: Authenticatable, Sendable {
     let id: UUID
+    let isAdmin: Bool
 }
 
 struct SupabaseAuthMiddleware: AsyncMiddleware {
@@ -19,9 +20,34 @@ struct SupabaseAuthMiddleware: AsyncMiddleware {
         guard response.status == .ok else { throw Abort(.unauthorized, reason: "ログインセッションが無効です") }
         let user = try response.content.decode(SupabaseUser.self)
         guard let uuid = UUID(uuidString: user.id) else { throw Abort(.unauthorized, reason: "ユーザーIDが不正です") }
-        request.auth.login(AuthenticatedUser(id: uuid))
+        let isAdmin = user.appMetadata?.role == "admin"
+        request.auth.login(AuthenticatedUser(id: uuid, isAdmin: isAdmin))
         return try await next.respond(to: request)
     }
 }
 
-private struct SupabaseUser: Content { let id: String }
+/// 管理者専用エンドポイントの手前に挟むミドルウェア。
+/// SupabaseAuthMiddlewareの後段で使うこと(先にAuthenticatedUserがログイン済みである必要がある)。
+struct RequireAdminMiddleware: AsyncMiddleware {
+    func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
+        let user = try request.auth.require(AuthenticatedUser.self)
+        guard user.isAdmin else {
+            throw Abort(.forbidden, reason: "管理者権限が必要です")
+        }
+        return try await next.respond(to: request)
+    }
+}
+
+private struct SupabaseUser: Content {
+    let id: String
+    let appMetadata: AppMetadata?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case appMetadata = "app_metadata"
+    }
+
+    struct AppMetadata: Codable, Sendable {
+        let role: String?
+    }
+}
