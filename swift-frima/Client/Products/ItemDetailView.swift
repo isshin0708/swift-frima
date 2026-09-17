@@ -135,9 +135,7 @@ struct ItemDetailView: View {
                     CheckoutView(
                         item: item,
                         api: api,
-                        authTokenProvider: {
-                            try await auth.accessToken()
-                        }
+                        auth: auth
                     )
                 } label: {
                     Text("購入する")

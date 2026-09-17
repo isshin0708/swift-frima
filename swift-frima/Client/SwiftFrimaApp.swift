@@ -99,7 +99,7 @@ private struct HomeView: View {
                             createdAt: Date()
                         ),
                         api: api,
-                        authTokenProvider: { try await auth.accessToken() }
+                        auth: auth
                     )
                 } label: {
                     Label("購入画面", systemImage: "cart")

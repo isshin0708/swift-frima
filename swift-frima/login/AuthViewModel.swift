@@ -97,4 +97,27 @@ final class AuthViewModel {
         let currentSession = try await supabase.auth.session
         return currentSession.accessToken
     }
+    
+    func authenticateWithPassword(
+        email: String,
+        password: String
+    ) async -> Bool {
+
+        do {
+            try await supabase.auth.signIn(
+                email: email,
+                password: password
+            )
+
+            session = try? await supabase.auth.session
+            errorMessage = nil
+
+            return true
+
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
 }
+
