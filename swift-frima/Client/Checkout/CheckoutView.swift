@@ -9,8 +9,8 @@ struct CheckoutView: View {
 
     let api: NetworkClient
 
-    let authTokenProvider: @Sendable () async throws -> String
-
+    let auth: AuthViewModel
+    
     @State private var biometric = BiometricAuthManager()
 
     @State private var isProcessing = false
@@ -23,6 +23,10 @@ struct CheckoutView: View {
 
     @State private var completed = false
     @State private var resultMessage = ""
+    
+    @State private var showPasswordFallback = false
+    @State private var password = ""
+    @State private var isPasswordProcessing = false
 
     var body: some View {
         Group {
@@ -38,72 +42,8 @@ struct CheckoutView: View {
             }
         }
     }
-
-    // MARK: - View
-
-    private var checkoutContent: some View {
-        VStack(spacing: 20) {
-
-            Text(item.name)
-                .font(.title2)
-                .bold()
-
-            Text(
-                "¥\(NSDecimalNumber(decimal: item.price).intValue)"
-            )
-            .font(.largeTitle)
-            .bold()
-
-            if biometric.biometryType != .faceID {
-                Text("Face ID対応端末でのみ購入できます。")
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .foregroundStyle(.red)
-                    .font(.caption)
-            }
-
-            Button {
-                startCheckout()
-            } label: {
-
-                if isProcessing {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else {
-                    Label(
-                        "Face IDで購入して支払う",
-                        systemImage: "faceid"
-                    )
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(
-                isProcessing ||
-                biometric.biometryType != .faceID
-            )
-        }
-        .padding()
-        .navigationTitle("購入確認")
-        .alert(
-            "購入結果",
-            isPresented: $completed
-        ) {
-            Button("OK") {}
-        } message: {
-            Text(resultMessage)
-        }
-    }
-
-    // MARK: - Stripe Checkout
-
-    private func startCheckout() {
+    
+    private func startPaymentProcess() {
 
         guard let itemId = item.id else {
             errorMessage = "商品情報が不正です。"
@@ -114,26 +54,8 @@ struct CheckoutView: View {
         errorMessage = nil
 
         Task {
-
             do {
-
-                // Face ID
-                guard await biometric.authenticate(
-                    reason: "購入手続きの本人確認のためFace IDを使用します"
-                ) else {
-
-                    await MainActor.run {
-                        isProcessing = false
-                        errorMessage =
-                            biometric.errorMessage ??
-                            "Face ID認証に失敗しました。"
-                    }
-
-                    return
-                }
-
-                // Supabase JWT
-                let token = try await authTokenProvider()
+                let token = try await auth.accessToken()
 
                 // ① 注文作成
                 let order: OrderResponse =
@@ -156,7 +78,6 @@ struct CheckoutView: View {
 
                 await MainActor.run {
 
-                    // Stripe Publishable Key設定
                     StripeConfig.configure()
 
                     var configuration =
@@ -168,7 +89,6 @@ struct CheckoutView: View {
                     configuration.allowsDelayedPaymentMethods =
                         false
 
-                    // PaymentSheet生成
                     paymentSheet = PaymentSheet(
                         paymentIntentClientSecret:
                             intent.clientSecret,
@@ -176,9 +96,7 @@ struct CheckoutView: View {
                     )
 
                     orderId = order.id
-
                     isProcessing = false
-
                     showPaymentSheet = true
                 }
 
@@ -191,6 +109,173 @@ struct CheckoutView: View {
             }
         }
     }
+
+    // MARK: - View
+
+    private var checkoutContent: some View {
+        VStack(spacing: 20) {
+
+            Text(item.name)
+                .font(.title2)
+                .bold()
+
+            Text(
+                "¥\(NSDecimalNumber(decimal: item.price).intValue)"
+            )
+            .font(.largeTitle)
+            .bold()
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .foregroundStyle(.red)
+                    .font(.caption)
+            }
+
+            Button {
+                startCheckout()
+            } label: {
+                if isProcessing {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                } else {
+                    Label(
+                        "Face IDで購入して支払う",
+                        systemImage: "faceid"
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(isProcessing)
+        }
+        .padding()
+        .navigationTitle("購入確認")
+        .alert(
+            "購入結果",
+            isPresented: $completed
+        ) {
+            Button("OK") {}
+        } message: {
+            Text(resultMessage)
+        }
+        .sheet(isPresented: $showPasswordFallback) {
+            passwordFallbackView
+        }
+    }
+    
+    private var passwordFallbackView: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 50))
+                    .foregroundStyle(.blue)
+
+                Text("パスワード認証")
+                    .font(.title2)
+                    .bold()
+
+                Text("Face ID認証に失敗しました。\nログインパスワードを入力してください。")
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+
+                SecureField("パスワード", text: $password)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+
+                Button {
+                    authenticateWithPassword()
+                } label: {
+                    if isPasswordProcessing {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else {
+                        Text("パスワードで認証")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(
+                    password.isEmpty ||
+                    isPasswordProcessing
+                )
+
+                Button("キャンセル") {
+                    password = ""
+                    showPasswordFallback = false
+                }
+                .foregroundStyle(.secondary)
+            }
+            .padding()
+            .navigationTitle("本人確認")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    // MARK: - Stripe Checkout
+
+    private func startCheckout() {
+
+        guard item.id != nil else {
+            errorMessage = "商品情報が不正です。"
+            return
+        }
+
+        isProcessing = true
+        errorMessage = nil
+
+        Task {
+            let authenticated = await biometric.authenticate(
+                reason: "購入手続きの本人確認のためFace IDを使用します"
+            )
+
+            await MainActor.run {
+                isProcessing = false
+
+                if authenticated {
+                    startPaymentProcess()
+                } else {
+                    showPasswordFallback = true
+                }
+            }
+        }
+    }
+    
+    private func authenticateWithPassword() {
+
+        guard let email = auth.currentUserEmail else {
+            errorMessage = "ログイン中のメールアドレスを取得できません。"
+            return
+        }
+
+        isPasswordProcessing = true
+        errorMessage = nil
+
+        Task {
+            await auth.signIn(
+                email: email,
+                password: password
+            )
+
+            await MainActor.run {
+                isPasswordProcessing = false
+
+                if auth.isAuthenticated {
+                    password = ""
+                    showPasswordFallback = false
+                    startPaymentProcess()
+                } else {
+                    errorMessage = "パスワードが正しくありません。"
+                }
+            }
+        }
+    }
+    
+    
 
     // MARK: - Payment Result
 
