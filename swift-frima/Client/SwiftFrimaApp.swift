@@ -66,7 +66,10 @@ private struct HomeView: View {
             Section("メニュー") {
 
                 NavigationLink {
-                    ItemListView(api: api)
+                    ItemListView(
+                        api: api,
+                        auth: auth
+                    )
                 } label: {
                     Label(
                         "商品を探す",
@@ -88,8 +91,7 @@ private struct HomeView: View {
                     )
                 }
 
-                NavigationLink("購入画面") {
-
+                NavigationLink {
                     CheckoutView(
                         item: Item(
                             id: UUID(),

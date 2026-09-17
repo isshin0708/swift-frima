@@ -3,7 +3,7 @@ import SwiftUI
 struct ItemDetailView: View {
     let item: Item
     let api: NetworkClient
-    let authTokenProvider: @Sendable () async throws -> String
+    let authTokenProvider: () async throws -> String
 
     var body: some View {
         ScrollView {
