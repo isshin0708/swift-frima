@@ -10,13 +10,37 @@ struct SwiftFrimaApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                if auth.isAuthenticated {
+                if auth.isLoadingSession {
+                    ProgressView()
+                } else if auth.isAuthenticated {
                     HomeView(api: api, auth: auth)
                 } else {
-                    AuthView(viewModel: auth)
+                    GuestItemListView(api: api, auth: auth)
                 }
             }
         }
+    }
+}
+
+/// 未ログイン時のルート画面。商品一覧をそのまま見せつつ、右上からログインできるようにする。
+private struct GuestItemListView: View {
+    let api: NetworkClient
+    let auth: AuthViewModel
+    @State private var showAuthSheet = false
+
+    var body: some View {
+        ItemListView(api: api, auth: auth)
+            .navigationTitle("商品一覧")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("ログイン") {
+                        showAuthSheet = true
+                    }
+                }
+            }
+            .sheet(isPresented: $showAuthSheet) {
+                AuthView(viewModel: auth)
+            }
     }
 }
 

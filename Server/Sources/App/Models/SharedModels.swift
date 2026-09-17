@@ -1,7 +1,7 @@
 import Foundation
 import Vapor
 
-public struct Item: Identifiable, Codable, Sendable, Equatable {
+public struct Item: Identifiable, Content, Sendable, Equatable {
     public var id: UUID?
     public var userId: UUID
     public var name: String
