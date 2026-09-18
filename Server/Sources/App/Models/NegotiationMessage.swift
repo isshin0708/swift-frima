@@ -20,6 +20,14 @@ final class NegotiationMessage: Model, Content, @unchecked Sendable {
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
 
+    enum CodingKeys: String, CodingKey {
+        case id
+        case itemId = "item_id"
+        case senderId = "sender_id"
+        case message
+        case createdAt = "created_at"
+    }
+
     init() {}
 
     init(

@@ -31,7 +31,7 @@ struct NegotiationMessageController: RouteCollection {
     @Sendable
     func sendMessage(
         req: Request
-    ) async throws -> NegotiationMessage {
+    ) async throws -> NegotiationMessageResponse {
 
         // ログインユーザーを取得
         let user = try req.auth.require(
@@ -88,13 +88,13 @@ struct NegotiationMessageController: RouteCollection {
         // DBへ保存
         try await message.save(on: req.db)
 
-        return message
+        return NegotiationMessageResponse(message: message)
     }
     
     @Sendable
     func getMessages(
         req: Request
-    ) async throws -> [NegotiationMessage] {
+    ) async throws -> [NegotiationMessageResponse] {
 
         // ログインユーザーを取得
         let user = try req.auth.require(
@@ -139,10 +139,14 @@ struct NegotiationMessageController: RouteCollection {
         }
 
         // 古いメッセージ → 新しいメッセージの順
-        return try await NegotiationMessage.query(on: req.db)
+        let messages = try await NegotiationMessage.query(on: req.db)
             .filter(\.$itemId == itemId)
             .sort(\.$createdAt, .ascending)
             .all()
+
+        return messages.map {
+            NegotiationMessageResponse(message: $0)
+        }
     }
 }
 
@@ -152,4 +156,28 @@ struct NegotiationMessageController: RouteCollection {
 struct SendNegotiationMessageRequest: Content {
 
     let message: String
+}
+
+struct NegotiationMessageResponse: Content {
+    let id: UUID?
+    let itemId: UUID
+    let senderId: UUID
+    let message: String
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case itemId = "item_id"
+        case senderId = "sender_id"
+        case message
+        case createdAt = "created_at"
+    }
+
+    init(message: NegotiationMessage) {
+        self.id = message.id
+        self.itemId = message.itemId
+        self.senderId = message.senderId
+        self.message = message.message
+        self.createdAt = message.createdAt
+    }
 }
