@@ -11,6 +11,16 @@ struct ItemDetailView: View {
     @State private var isLikeLoading = false
     @State private var likeErrorMessage: String?
 
+    @State private var showAuthSheet = false
+    @State private var navigateToCheckout = false
+    /// ログインシートが閉じた後にやりたかったことを覚えておくためのフラグ
+    @State private var pendingActionAfterLogin: PendingAction?
+
+    private enum PendingAction {
+        case checkout
+        case like
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -131,12 +141,13 @@ struct ItemDetailView: View {
                 }
 
                 // 購入ボタン
-                NavigationLink {
-                    CheckoutView(
-                        item: item,
-                        api: api,
-                        auth: auth
-                    )
+                Button {
+                    if auth.isAuthenticated {
+                        navigateToCheckout = true
+                    } else {
+                        pendingActionAfterLogin = .checkout
+                        showAuthSheet = true
+                    }
                 } label: {
                     Text("購入する")
                         .font(.headline)
@@ -149,10 +160,44 @@ struct ItemDetailView: View {
         }
         .navigationTitle("商品詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $navigateToCheckout) {
+            CheckoutView(
+                item: item,
+                api: api,
+                auth: auth
+            )
+        }
+        .sheet(isPresented: $showAuthSheet, onDismiss: handlePendingActionAfterSheetDismissed) {
+            AuthView(viewModel: auth)
+        }
+        .onChange(of: auth.isAuthenticated) { _, isAuthenticated in
+            // ログインが完了したらシートを閉じる。続きの処理は onDismiss 側(シートが完全に閉じ終わった後)で行う。
+            if isAuthenticated && showAuthSheet {
+                showAuthSheet = false
+            }
+        }
 
-        // 商品詳細を開いたときにいいね状態を取得
+        // 商品詳細を開いたときにいいね状態を取得(ログイン済みの場合のみ)
         .task {
             await loadLikeStatus()
+        }
+    }
+
+    // MARK: - ログインシートが閉じた後の続き処理
+
+    private func handlePendingActionAfterSheetDismissed() {
+        defer { pendingActionAfterLogin = nil }
+
+        // ログインせずに手動でシートを閉じた場合は何もしない
+        guard auth.isAuthenticated else { return }
+
+        switch pendingActionAfterLogin {
+        case .checkout:
+            navigateToCheckout = true
+        case .like:
+            Task { await likeItem() }
+        case nil:
+            break
         }
     }
 
@@ -161,6 +206,11 @@ struct ItemDetailView: View {
     private func loadLikeStatus() async {
 
         guard let itemId = item.id else {
+            return
+        }
+
+        // 未ログインならエラーにせず何もしない(ログインしていないだけなので)
+        guard auth.isAuthenticated else {
             return
         }
 
@@ -187,6 +237,13 @@ struct ItemDetailView: View {
     private func likeItem() async {
 
         guard let itemId = item.id else {
+            return
+        }
+
+        // 未ログインならログイン画面へ
+        guard auth.isAuthenticated else {
+            pendingActionAfterLogin = .like
+            showAuthSheet = true
             return
         }
 
