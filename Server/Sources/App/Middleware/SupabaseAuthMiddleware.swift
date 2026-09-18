@@ -21,7 +21,50 @@ struct SupabaseAuthMiddleware: AsyncMiddleware {
         let user = try response.content.decode(SupabaseUser.self)
         guard let uuid = UUID(uuidString: user.id) else { throw Abort(.unauthorized, reason: "ユーザーIDが不正です") }
         let isAdmin = user.appMetadata?.role == "admin"
-        request.auth.login(AuthenticatedUser(id: uuid, isAdmin: isAdmin))
+
+        // アカウント状態を確認
+        guard let profile = try await Profile.query(on: request.db)
+            .filter(\.$id, .equal, uuid)
+            .first()
+        else {
+            throw Abort(
+                .forbidden,
+                reason: "プロフィールが見つかりません"
+            )
+        }
+
+        // 一時停止・BANチェック
+        switch profile.accountStatus {
+
+        case "suspended":
+            throw Abort(
+                .forbidden,
+                reason: "このアカウントは一時停止されています"
+            )
+
+        case "banned":
+            throw Abort(
+                .forbidden,
+                reason: "このアカウントはBANされています"
+            )
+
+        case "active":
+            break
+
+        default:
+            throw Abort(
+                .forbidden,
+                reason: "アカウント状態が不正です"
+            )
+        }
+
+        request.auth.login(
+            AuthenticatedUser(
+                id: uuid,
+                isAdmin: isAdmin
+            )
+        )
+
         return try await next.respond(to: request)
     }
 }
