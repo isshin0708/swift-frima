@@ -7,14 +7,18 @@ import Supabase
 final class AuthViewModel {
 
     // MARK: - Properties
-
-    private(set) var session: Session?
-
     /// アプリ起動直後、保存済みセッションの確認が終わるまで true。
     private(set) var isLoadingSession = true
+    
+    private(set) var session: Session?
+    private(set) var currentUserRole: String?
 
     var errorMessage: String?
     var isBusy = false
+    
+    var isAdmin: Bool {
+        currentUserRole == "admin"
+    }
 
     // MARK: - Initialization
 
@@ -49,11 +53,34 @@ final class AuthViewModel {
 
         do {
             session = try await supabase.auth.session
+            await loadUserRole()
         } catch {
             session = nil
+            currentUserRole = nil
         }
 
         isLoadingSession = false
+    }
+    
+    private func loadUserRole() async {
+        guard let userId = session?.user.id else {
+            currentUserRole = nil
+            return
+        }
+
+        do {
+            let response: ProfileResponse = try await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", value: userId.uuidString)
+                .single()
+                .execute()
+                .value
+
+            currentUserRole = response.role
+        } catch {
+            currentUserRole = nil
+        }
     }
 
     // MARK: - Observe Authentication Changes
@@ -69,6 +96,12 @@ final class AuthViewModel {
             }
 
             session = newSession
+
+            if newSession != nil {
+                await loadUserRole()
+            } else {
+                currentUserRole = nil
+            }
         }
     }
 
@@ -124,6 +157,9 @@ final class AuthViewModel {
 
             session = try? await supabase.auth.session
 
+            if session != nil {
+                await loadUserRole()
+            }
         } catch {
 
             errorMessage = error.localizedDescription
@@ -139,6 +175,7 @@ final class AuthViewModel {
             try await supabase.auth.signOut()
 
             session = nil
+            currentUserRole = nil
 
         } catch {
 
@@ -181,4 +218,9 @@ final class AuthViewModel {
             return false
         }
     }
+    
+}
+
+private struct ProfileResponse: Decodable {
+    let role: String
 }
