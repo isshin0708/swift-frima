@@ -177,3 +177,23 @@ public struct LikeStatusResponse: Codable, Sendable, Equatable {
 public struct EmptyRequest: Codable, Sendable {
     public init() {}
 }
+
+struct SendNegotiationMessageRequest: Codable, Sendable {
+    let message: String
+}
+
+struct NegotiationMessage: Codable, Sendable {
+    let id: UUID
+    let itemId: UUID
+    let senderId: UUID
+    let message: String
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case itemId = "item_id"
+        case senderId = "sender_id"
+        case message
+        case createdAt = "created_at"
+    }
+}
