@@ -13,9 +13,10 @@ struct ItemDetailView: View {
 
     @State private var showAuthSheet = false
     @State private var navigateToCheckout = false
+
     /// ログインシートが閉じた後にやりたかったことを覚えておくためのフラグ
     @State private var pendingActionAfterLogin: PendingAction?
-    
+
     @State private var negotiationMessage = ""
     @State private var isSendingNegotiation = false
     @State private var negotiationErrorMessage: String?
@@ -63,7 +64,7 @@ struct ItemDetailView: View {
                             RoundedRectangle(cornerRadius: 12)
                         )
                 }
-                
+
                 // 出品者プロフィール
                 NavigationLink {
                     ProfileDetailView(
@@ -72,12 +73,15 @@ struct ItemDetailView: View {
                         auth: auth
                     )
                 } label: {
+
                     HStack(spacing: 12) {
+
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 40))
                             .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 4) {
+
                             Text("出品者")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -113,8 +117,14 @@ struct ItemDetailView: View {
                         await likeItem()
                     }
                 } label: {
+
                     HStack {
-                        Image(systemName: isLiked ? "heart.fill" : "heart")
+
+                        Image(
+                            systemName: isLiked
+                                ? "heart.fill"
+                                : "heart"
+                        )
 
                         Text("いいね")
 
@@ -135,6 +145,7 @@ struct ItemDetailView: View {
 
                 // 商品説明
                 VStack(alignment: .leading, spacing: 8) {
+
                     Text("商品説明")
                         .font(.headline)
 
@@ -144,7 +155,9 @@ struct ItemDetailView: View {
 
                 // 参考価格
                 if let referencePrice = item.referencePrice {
+
                     VStack(alignment: .leading, spacing: 8) {
+
                         Text("参考価格")
                             .font(.headline)
 
@@ -159,7 +172,9 @@ struct ItemDetailView: View {
 
                 // メーカー希望小売価格
                 if let suggestedPrice = item.manufacturerSuggestedRetailPrice {
+
                     VStack(alignment: .leading, spacing: 8) {
+
                         Text("メーカー希望小売価格")
                             .font(.headline)
 
@@ -174,17 +189,24 @@ struct ItemDetailView: View {
 
                 // 商品状態
                 VStack(alignment: .leading, spacing: 8) {
+
                     Text("商品状態")
                         .font(.headline)
 
                     Text(statusText)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 // MARK: - 値段交渉・質問
+
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(item.userId == authUserId ? "購入希望者とやり取り" : "出品者に相談")
-                        .font(.headline)
+
+                    Text(
+                        item.userId == authUserId
+                            ? "購入希望者とやり取り"
+                            : "出品者に相談"
+                    )
+                    .font(.headline)
 
                     TextField(
                         item.userId == authUserId
@@ -201,7 +223,9 @@ struct ItemDetailView: View {
                             await sendNegotiationMessage()
                         }
                     } label: {
+
                         HStack {
+
                             if isSendingNegotiation {
                                 ProgressView()
                             }
@@ -213,54 +237,79 @@ struct ItemDetailView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(
                         negotiationMessage
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                            .trimmingCharacters(
+                                in: .whitespacesAndNewlines
+                            )
                             .isEmpty
                         || isSendingNegotiation
                     )
 
                     if let negotiationSentMessage {
+
                         Text(negotiationSentMessage)
                             .font(.caption)
                             .foregroundStyle(.green)
                     }
 
                     if let negotiationErrorMessage {
+
                         Text(negotiationErrorMessage)
                             .font(.caption)
                             .foregroundStyle(.red)
                     }
                 }
                 .padding(.vertical, 8)
-                
+
                 if !negotiationMessages.isEmpty {
+
                     VStack(alignment: .leading, spacing: 12) {
+
                         Text("やり取り")
                             .font(.headline)
 
                         VStack(spacing: 8) {
-                            ForEach(negotiationMessages, id: \.id) { message in
-                                let isMine = message.senderId == authUserId
+
+                            ForEach(
+                                negotiationMessages,
+                                id: \.id
+                            ) { message in
+
+                                let isMine =
+                                    message.senderId == authUserId
 
                                 HStack {
+
                                     if isMine {
                                         Spacer(minLength: 50)
                                     }
 
-                                    VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
-                                        Text(isMine ? "あなた" : "出品者")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                    VStack(
+                                        alignment: isMine
+                                            ? .trailing
+                                            : .leading,
+                                        spacing: 4
+                                    ) {
+
+                                        Text(
+                                            isMine
+                                                ? "あなた"
+                                                : "出品者"
+                                        )
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
 
                                         Text(message.message)
                                             .padding(.horizontal, 12)
                                             .padding(.vertical, 9)
                                             .background(
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .fill(
-                                                        isMine
+                                                RoundedRectangle(
+                                                    cornerRadius: 14
+                                                )
+                                                .fill(
+                                                    isMine
                                                         ? Color.blue.opacity(0.15)
                                                         : Color.gray.opacity(0.15)
-                                                    )
+                                                )
                                             )
                                     }
 
@@ -271,18 +320,20 @@ struct ItemDetailView: View {
                             }
                         }
                     }
-                    .padding(.vertical, 8)
                 }
 
                 // 購入ボタン
                 Button {
+
                     if auth.isAuthenticated {
                         navigateToCheckout = true
                     } else {
                         pendingActionAfterLogin = .checkout
                         showAuthSheet = true
                     }
+
                 } label: {
+
                     Text("購入する")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
@@ -294,6 +345,7 @@ struct ItemDetailView: View {
         }
         .navigationTitle("商品詳細")
         .navigationBarTitleDisplayMode(.inline)
+
         .navigationDestination(isPresented: $navigateToCheckout) {
             CheckoutView(
                 item: item,
@@ -301,17 +353,26 @@ struct ItemDetailView: View {
                 auth: auth
             )
         }
-        .sheet(isPresented: $showAuthSheet, onDismiss: handlePendingActionAfterSheetDismissed) {
+
+        .sheet(
+            isPresented: $showAuthSheet,
+            onDismiss: handlePendingActionAfterSheetDismissed
+        ) {
             AuthView(viewModel: auth)
         }
+
         .onChange(of: auth.isAuthenticated) { _, isAuthenticated in
-            // ログインが完了したらシートを閉じる。続きの処理は onDismiss 側(シートが完全に閉じ終わった後)で行う。
+
+            // ログインが完了したらシートを閉じる。
+            // 続きの処理は onDismiss 側
+            // (シートが完全に閉じ終わった後)で行う。
             if isAuthenticated && showAuthSheet {
                 showAuthSheet = false
             }
         }
 
-        // 商品詳細を開いたときにいいね状態を取得(ログイン済みの場合のみ)
+        // 商品詳細を開いたときにいいね状態を取得
+        // (ログイン済みの場合のみ)
         .task {
             await loadLikeStatus()
         }
@@ -320,17 +381,27 @@ struct ItemDetailView: View {
     // MARK: - ログインシートが閉じた後の続き処理
 
     private func handlePendingActionAfterSheetDismissed() {
-        defer { pendingActionAfterLogin = nil }
+
+        defer {
+            pendingActionAfterLogin = nil
+        }
 
         // ログインせずに手動でシートを閉じた場合は何もしない
-        guard auth.isAuthenticated else { return }
+        guard auth.isAuthenticated else {
+            return
+        }
 
         switch pendingActionAfterLogin {
+
         case .checkout:
             navigateToCheckout = true
+
         case .like:
-            Task { await likeItem() }
-        case nil:
+            Task {
+                await likeItem()
+            }
+
+        case .none:
             break
         }
     }
@@ -343,7 +414,8 @@ struct ItemDetailView: View {
             return
         }
 
-        // 未ログインならエラーにせず何もしない(ログインしていないだけなので)
+        // 未ログインならエラーにせず何もしない
+        // (ログインしていないだけなので)
         guard auth.isAuthenticated else {
             return
         }
@@ -351,6 +423,7 @@ struct ItemDetailView: View {
         likeErrorMessage = nil
 
         do {
+
             let token = try await auth.accessToken()
 
             let response: LikeStatusResponse = try await api.get(
@@ -362,11 +435,12 @@ struct ItemDetailView: View {
             likeCount = response.likeCount
 
         } catch {
+
             likeErrorMessage = error.localizedDescription
         }
     }
 
-    // MARK: - いいね登録
+    // MARK: - いいね切り替え
 
     private func likeItem() async {
 
@@ -376,13 +450,10 @@ struct ItemDetailView: View {
 
         // 未ログインならログイン画面へ
         guard auth.isAuthenticated else {
+
             pendingActionAfterLogin = .like
             showAuthSheet = true
-            return
-        }
 
-        // すでにいいね済みなら何もしない
-        guard !isLiked else {
             return
         }
 
@@ -394,18 +465,41 @@ struct ItemDetailView: View {
         }
 
         do {
+
             let token = try await auth.accessToken()
 
-            let response: LikeStatusResponse = try await api.post(
-                "/api/items/\(itemId)/like",
-                body: EmptyRequest(),
-                authToken: token
-            )
+            let response: LikeStatusResponse
 
+            if isLiked {
+
+                // ==========================================
+                // すでにいいね済み → いいね解除
+                // ==========================================
+
+                response = try await api.delete(
+                    "/api/items/\(itemId)/like",
+                    authToken: token
+                )
+
+            } else {
+
+                // ==========================================
+                // まだいいねしていない → いいね
+                // ==========================================
+
+                response = try await api.post(
+                    "/api/items/\(itemId)/like",
+                    body: EmptyRequest(),
+                    authToken: token
+                )
+            }
+
+            // サーバーから返された最新状態を反映
             isLiked = response.isLiked
             likeCount = response.likeCount
 
         } catch {
+
             likeErrorMessage = error.localizedDescription
         }
     }
@@ -413,7 +507,9 @@ struct ItemDetailView: View {
     // MARK: - 商品状態
 
     private var statusText: String {
+
         switch item.status {
+
         case .onSale:
             return "販売中"
 
@@ -430,15 +526,21 @@ struct ItemDetailView: View {
             return "取り置き中"
         }
     }
-    
+
     private func sendNegotiationMessage() async {
+
         guard let itemId = item.id else {
-            negotiationErrorMessage = "商品IDを取得できません。"
+
+            negotiationErrorMessage =
+                "商品IDを取得できません。"
+
             return
         }
 
         let message = negotiationMessage
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
 
         guard !message.isEmpty else {
             return
@@ -449,29 +551,31 @@ struct ItemDetailView: View {
         negotiationSentMessage = nil
 
         do {
+
             let token = try await auth.accessToken()
 
             let request = SendNegotiationMessageRequest(
                 message: message
             )
 
-            let _: NegotiationMessage = try await api.post(
-                "/api/items/\(itemId.uuidString)/messages",
-                body: request,
-                authToken: token
-            )
+            let _: NegotiationMessage =
+                try await api.post(
+                    "/api/items/\(itemId.uuidString)/messages",
+                    body: request,
+                    authToken: token
+                )
 
             negotiationMessage = ""
-            negotiationSentMessage = "メッセージを送信しました。"
+
+            negotiationSentMessage =
+                "メッセージを送信しました。"
 
         } catch {
-            negotiationErrorMessage = error.localizedDescription
+
+            negotiationErrorMessage =
+                error.localizedDescription
         }
 
         isSendingNegotiation = false
     }
-    
-    
-
 }
-

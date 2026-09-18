@@ -5,8 +5,11 @@ import Supabase
 @MainActor
 @Observable
 final class AuthViewModel {
+
     // MARK: - Properties
+
     private(set) var session: Session?
+
     /// アプリ起動直後、保存済みセッションの確認が終わるまで true。
     private(set) var isLoadingSession = true
 
@@ -14,16 +17,19 @@ final class AuthViewModel {
     var isBusy = false
 
     // MARK: - Initialization
+
     init() {
         Task {
             await loadInitialSession()
         }
+
         Task {
             await observeAuthChanges()
         }
     }
 
     // MARK: - Authentication State
+
     var isAuthenticated: Bool {
         session != nil
     }
@@ -32,78 +38,132 @@ final class AuthViewModel {
         session?.user.email
     }
 
+    /// 現在ログインしているユーザーのUUID
+    var currentUserId: UUID? {
+        session?.user.id
+    }
+
     // MARK: - Load Session
+
     private func loadInitialSession() async {
+
         do {
             session = try await supabase.auth.session
         } catch {
             session = nil
         }
+
         isLoadingSession = false
     }
 
     // MARK: - Observe Authentication Changes
+
     private func observeAuthChanges() async {
+
         for await (event, newSession) in supabase.auth.authStateChanges {
-            // .initialSession は supabase-swift の既知の挙動で、保存済みセッションの
-            // リフレッシュに失敗すると nil が流れてくることがある。
-            // 初期状態は loadInitialSession() 側ですでに正しく取得済みなので、
-            // ここでは無視して上書きされないようにする。
-            if event == .initialSession { continue }
+
+            // .initialSession は保存済みセッションの初期通知。
+            // 初期状態は loadInitialSession() で確認する。
+            if event == .initialSession {
+                continue
+            }
+
             session = newSession
         }
     }
 
     // MARK: - Sign Up
-    func signUp(email: String, password: String) async {
+
+    func signUp(
+        email: String,
+        password: String
+    ) async {
+
         isBusy = true
         errorMessage = nil
-        defer { isBusy = false }
+
+        defer {
+            isBusy = false
+        }
 
         do {
-            _ = try await supabase.auth.signUp(email: email, password: password)
+
+            _ = try await supabase.auth.signUp(
+                email: email,
+                password: password
+            )
+
             session = try? await supabase.auth.session
+
         } catch {
+
             errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Sign In
-    func signIn(email: String, password: String) async {
+
+    func signIn(
+        email: String,
+        password: String
+    ) async {
+
         isBusy = true
         errorMessage = nil
-        defer { isBusy = false }
+
+        defer {
+            isBusy = false
+        }
 
         do {
-            try await supabase.auth.signIn(email: email, password: password)
+
+            try await supabase.auth.signIn(
+                email: email,
+                password: password
+            )
+
             session = try? await supabase.auth.session
+
         } catch {
+
             errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Sign Out
+
     func signOut() async {
+
         do {
+
             try await supabase.auth.signOut()
+
             session = nil
+
         } catch {
+
             errorMessage = error.localizedDescription
         }
     }
 
     // MARK: - Access Token
+
     func accessToken() async throws -> String {
+
         let currentSession = try await supabase.auth.session
+
         return currentSession.accessToken
     }
-    
+
+    // MARK: - Password Authentication
+
     func authenticateWithPassword(
         email: String,
         password: String
     ) async -> Bool {
 
         do {
+
             try await supabase.auth.signIn(
                 email: email,
                 password: password
@@ -115,9 +175,10 @@ final class AuthViewModel {
             return true
 
         } catch {
+
             errorMessage = error.localizedDescription
+
             return false
         }
     }
 }
-

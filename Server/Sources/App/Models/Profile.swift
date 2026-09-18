@@ -8,8 +8,8 @@ final class Profile: Model, Content, @unchecked Sendable {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "user_name")
-    var userName: String
+    @Field(key: "username")
+    var username: String
 
     @Field(key: "role")
     var role: String
@@ -21,11 +21,11 @@ final class Profile: Model, Content, @unchecked Sendable {
 
     init(
         id: UUID? = nil,
-        userName: String,
+        username: String,
         role: String
     ) {
         self.id = id
-        self.userName = userName
+        self.username = username
         self.role = role
     }
 }
