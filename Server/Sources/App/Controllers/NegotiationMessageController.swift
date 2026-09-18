@@ -21,6 +21,11 @@ struct NegotiationMessageController: RouteCollection {
             "messages",
             use: sendMessage
         )
+        items.get(
+            ":itemId",
+            "messages",
+            use: getMessages
+        )
     }
 
     @Sendable
@@ -84,6 +89,60 @@ struct NegotiationMessageController: RouteCollection {
         try await message.save(on: req.db)
 
         return message
+    }
+    
+    @Sendable
+    func getMessages(
+        req: Request
+    ) async throws -> [NegotiationMessage] {
+
+        // ログインユーザーを取得
+        let user = try req.auth.require(
+            AuthenticatedUser.self
+        )
+
+        // 商品IDを取得
+        guard
+            let itemIdString = req.parameters.get("itemId"),
+            let itemId = UUID(uuidString: itemIdString)
+        else {
+            throw Abort(
+                .badRequest,
+                reason: "商品IDが不正です"
+            )
+        }
+
+        // 商品を取得
+        guard let item = try await ItemModel.query(on: req.db)
+            .filter(\.$id == itemId)
+            .first()
+        else {
+            throw Abort(
+                .notFound,
+                reason: "商品が見つかりません"
+            )
+        }
+
+        // 出品者または購入者だけが閲覧できるようにする
+        let isSeller = item.userId == user.id
+
+        let isParticipant = try await NegotiationMessage.query(on: req.db)
+            .filter(\.$itemId == itemId)
+            .filter(\.$senderId == user.id)
+            .first() != nil
+
+        guard isSeller || isParticipant else {
+            throw Abort(
+                .forbidden,
+                reason: "このメッセージを閲覧する権限がありません"
+            )
+        }
+
+        // 古いメッセージ → 新しいメッセージの順
+        return try await NegotiationMessage.query(on: req.db)
+            .filter(\.$itemId == itemId)
+            .sort(\.$createdAt, .ascending)
+            .all()
     }
 }
 

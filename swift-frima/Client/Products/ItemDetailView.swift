@@ -15,6 +15,14 @@ struct ItemDetailView: View {
     @State private var navigateToCheckout = false
     /// ログインシートが閉じた後にやりたかったことを覚えておくためのフラグ
     @State private var pendingActionAfterLogin: PendingAction?
+    
+    @State private var negotiationMessage = ""
+    @State private var isSendingNegotiation = false
+    @State private var negotiationErrorMessage: String?
+    @State private var negotiationSentMessage: String?
+    @State private var negotiationMessages: [NegotiationMessage] = []
+    @State private var isLoadingMessages = false
+    @State private var authUserId: UUID?
 
     private enum PendingAction {
         case checkout
@@ -88,11 +96,6 @@ struct ItemDetailView: View {
                 .buttonStyle(.plain)
 
                 Divider()
-
-                // 商品名
-                Text(item.name)
-                    .font(.title)
-                    .fontWeight(.bold)
 
                 // 商品名
                 Text(item.name)
@@ -176,6 +179,82 @@ struct ItemDetailView: View {
 
                     Text(statusText)
                         .foregroundStyle(.secondary)
+                }
+                
+                // MARK: - 値段交渉・質問
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("出品者に相談")
+                        .font(.headline)
+
+                    TextField(
+                        "価格交渉や質問を入力",
+                        text: $negotiationMessage,
+                        axis: .vertical
+                    )
+                    .lineLimit(3...6)
+                    .textFieldStyle(.roundedBorder)
+
+                    Button {
+                        Task {
+                            await sendNegotiationMessage()
+                        }
+                    } label: {
+                        HStack {
+                            if isSendingNegotiation {
+                                ProgressView()
+                            }
+
+                            Text("送信")
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(
+                        negotiationMessage
+                            .trimmingCharacters(in: .whitespacesAndNewlines)
+                            .isEmpty
+                        || isSendingNegotiation
+                    )
+
+                    if let negotiationSentMessage {
+                        Text(negotiationSentMessage)
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
+
+                    if let negotiationErrorMessage {
+                        Text(negotiationErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .padding(.vertical, 8)
+                
+                if !negotiationMessages.isEmpty {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("やり取り")
+                            .font(.headline)
+
+                        ForEach(negotiationMessages, id: \.id) { message in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(
+                                    message.senderId == authUserId
+                                    ? "あなた"
+                                    : "出品者"
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                                Text(message.message)
+                                    .padding(10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(.gray.opacity(0.15))
+                                    )
+                            }
+                        }
+                    }
                 }
 
                 // 購入ボタン
@@ -334,4 +413,48 @@ struct ItemDetailView: View {
             return "取り置き中"
         }
     }
+    
+    private func sendNegotiationMessage() async {
+        guard let itemId = item.id else {
+            negotiationErrorMessage = "商品IDを取得できません。"
+            return
+        }
+
+        let message = negotiationMessage
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !message.isEmpty else {
+            return
+        }
+
+        isSendingNegotiation = true
+        negotiationErrorMessage = nil
+        negotiationSentMessage = nil
+
+        do {
+            let token = try await auth.accessToken()
+
+            let request = SendNegotiationMessageRequest(
+                message: message
+            )
+
+            let _: NegotiationMessage = try await api.post(
+                "/api/items/\(itemId.uuidString)/messages",
+                body: request,
+                authToken: token
+            )
+
+            negotiationMessage = ""
+            negotiationSentMessage = "メッセージを送信しました。"
+
+        } catch {
+            negotiationErrorMessage = error.localizedDescription
+        }
+
+        isSendingNegotiation = false
+    }
+    
+    
+
 }
+
