@@ -131,7 +131,6 @@ struct KYCController: RouteCollection {
             )
         }
 
-        // サイズチェック
         guard data.count <= maxFileSize else {
             throw Abort(
                 .payloadTooLarge,
@@ -139,7 +138,6 @@ struct KYCController: RouteCollection {
             )
         }
 
-        // すでに本人確認済みか確認
         let verified = try await isVerified(
             userId: user.id,
             database: req.db
@@ -152,7 +150,6 @@ struct KYCController: RouteCollection {
             )
         }
 
-        // 審査中の申請があるか確認
         let existingPending = try await KYCSubmission.query(
             on: req.db
         )
@@ -167,7 +164,6 @@ struct KYCController: RouteCollection {
             )
         }
 
-        // 実際の画像形式を判定
         guard let imageType = detectImageType(data) else {
             throw Abort(
                 .unsupportedMediaType,
