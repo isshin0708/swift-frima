@@ -9,7 +9,6 @@ struct MyProfileView: View {
     @State private var userName = ""
     @State private var role = ""
     @State private var createdAt: Date?
-
     @State private var items: [Item] = []
 
     @State private var isLoading = true
@@ -35,7 +34,6 @@ struct MyProfileView: View {
                         .foregroundStyle(.secondary)
 
                     Button("再読み込み") {
-
                         Task {
                             await loadProfile()
                         }
@@ -54,6 +52,8 @@ struct MyProfileView: View {
         }
     }
 
+    // MARK: - Profile Content
+
     private var profileContent: some View {
 
         ScrollView {
@@ -65,7 +65,10 @@ struct MyProfileView: View {
                 Image(systemName: "person.circle.fill")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 100, height: 100)
+                    .frame(
+                        width: 100,
+                        height: 100
+                    )
                     .foregroundStyle(.secondary)
 
                 // MARK: - Username
@@ -95,9 +98,82 @@ struct MyProfileView: View {
 
                 Divider()
 
-                // MARK: - Items
+                // MARK: - 本人確認
 
                 VStack(alignment: .leading, spacing: 12) {
+
+                    Text("本人確認")
+                        .font(.title3)
+                        .bold()
+
+                    NavigationLink {
+                        IdentityVerificationView(
+                            api: api,
+                            auth: auth
+                        )
+                    } label: {
+
+                        HStack(spacing: 12) {
+
+                            Image(
+                                systemName:
+                                    "person.text.rectangle"
+                            )
+                            .font(.title3)
+                            .foregroundStyle(.blue)
+
+                            VStack(
+                                alignment: .leading,
+                                spacing: 4
+                            ) {
+
+                                Text("本人確認を申請")
+                                    .font(.headline)
+
+                                Text(
+                                    "運転免許証・マイナンバーカードを提出"
+                                )
+                                .font(.caption)
+                                .foregroundStyle(
+                                    .secondary
+                                )
+                            }
+
+                            Spacer()
+
+                            Image(
+                                systemName:
+                                    "chevron.right"
+                            )
+                            .foregroundStyle(
+                                .secondary
+                            )
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(
+                                cornerRadius: 12
+                            )
+                            .fill(
+                                Color.gray.opacity(0.1)
+                            )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+
+                Divider()
+
+                // MARK: - Items
+
+                VStack(
+                    alignment: .leading,
+                    spacing: 12
+                ) {
 
                     Text("自分の出品商品")
                         .font(.title3)
@@ -105,10 +181,14 @@ struct MyProfileView: View {
 
                     if items.isEmpty {
 
-                        Text("出品している商品はありません。")
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                        Text(
+                            "出品している商品はありません。"
+                        )
+                        .foregroundStyle(.secondary)
+                        .frame(
+                            maxWidth: .infinity
+                        )
+                        .padding()
 
                     } else {
 
@@ -132,7 +212,9 @@ struct MyProfileView: View {
 
                                 } label: {
 
-                                    ItemCardView(item: item)
+                                    ItemCardView(
+                                        item: item
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -148,6 +230,8 @@ struct MyProfileView: View {
         }
     }
 
+    // MARK: - Load Profile
+
     private func loadProfile() async {
 
         isLoading = true
@@ -158,6 +242,7 @@ struct MyProfileView: View {
             // MARK: - Current User
 
             let token = try await auth.accessToken()
+
             let userId = try await getCurrentUserId()
 
             // MARK: - Profile
@@ -172,7 +257,8 @@ struct MyProfileView: View {
             role = profile.role
             createdAt = profile.createdAt
 
-            // プロフィール自体は取得できたので、ここで表示可能にする
+            // プロフィール自体は取得できたので、
+            // ここで表示可能にする
             isLoading = false
 
             // MARK: - Items
@@ -180,6 +266,7 @@ struct MyProfileView: View {
             // 現在のItemControllerには
             // GET /api/items がまだないため、
             // 商品取得に失敗してもプロフィール表示は維持する。
+
             do {
 
                 items = try await api.get(
@@ -205,6 +292,8 @@ struct MyProfileView: View {
         }
     }
 
+    // MARK: - Current User ID
+
     private func getCurrentUserId() async throws -> UUID {
 
         let session = try await supabase.auth.session
@@ -212,6 +301,8 @@ struct MyProfileView: View {
         return session.user.id
     }
 }
+
+// MARK: - Profile Response
 
 private struct ProfileResponse: Codable, Sendable {
 
