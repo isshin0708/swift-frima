@@ -28,4 +28,7 @@ final class Profile: Model, Content, @unchecked Sendable {
         self.username = username
         self.role = role
     }
+    
+    @Field(key: "account_status")
+    var accountStatus: String
 }

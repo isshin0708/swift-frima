@@ -318,6 +318,29 @@ public struct NetworkClient: Sendable {
             )
         }
     }
+    
+    public func patch<Body: Encodable, T: Decodable>(
+        _ path: String,
+        body: Body,
+        authToken: String? = nil
+    ) async throws -> T {
+
+        var request = try makeRequest(
+            path: path,
+            method: "PATCH",
+            queryItems: [],
+            authToken: authToken
+        )
+
+        request.setValue(
+            "application/json",
+            forHTTPHeaderField: "Content-Type"
+        )
+
+        request.httpBody = try JSONEncoder.iso8601.encode(body)
+
+        return try await send(request)
+    }
 }
 
 private struct ServerErrorPayload: Decodable {
