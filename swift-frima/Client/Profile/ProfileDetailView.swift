@@ -13,6 +13,7 @@ struct ProfileDetailView: View {
     @State private var items: [Item] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var isReported = false
 
     var body: some View {
 
@@ -81,6 +82,37 @@ struct ProfileDetailView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
+                
+                // MARK: - Report
+
+                if auth.currentUserId != userId {
+
+                    if isReported {
+
+                        Label(
+                            "通報済み",
+                            systemImage: "checkmark.circle"
+                        )
+                        .foregroundStyle(.secondary)
+
+                    } else {
+
+                        NavigationLink {
+                            UserReportView(
+                                api: api,
+                                auth: auth,
+                                reportedUserId: userId
+                            )
+                        } label: {
+                            Label(
+                                "このユーザーを通報",
+                                systemImage: "exclamationmark.triangle"
+                            )
+                        }
+                        .foregroundStyle(.red)
+                    }
+                }
+
 
                 // MARK: - Created At
 
@@ -180,6 +212,33 @@ struct ProfileDetailView: View {
                 ],
                 authToken: token
             )
+
+            // MARK: - Report Status
+
+            // 自分自身のプロフィールでは確認不要
+            if auth.currentUserId != userId {
+
+                do {
+
+                    let reportStatus: UserReportStatusResponse =
+                        try await api.get(
+                            "/api/reports/users/\(userId.uuidString)/status",
+                            authToken: token
+                        )
+
+                    isReported = reportStatus.reported
+
+                } catch {
+
+                    // 通報状態の取得に失敗しても
+                    // プロフィール自体は表示する
+                    isReported = false
+                }
+
+            } else {
+
+                isReported = false
+            }
 
             isLoading = false
 

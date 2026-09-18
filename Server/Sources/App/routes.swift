@@ -19,4 +19,6 @@ func routes(_ app: Application) throws {
     try app.register(collection: ProfileController())
     try app.register(collection: NegotiationMessageController())
     try app.register(collection: AdminUserController())
+    try app.register(collection: ReportController())
+    try app.register(collection: AdminReportController())
 }

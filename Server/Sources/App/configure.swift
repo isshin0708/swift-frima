@@ -39,4 +39,9 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateOrders())
     try routes(app)
     try await app.autoMigrate()
+    try app.register(collection: ItemController())
+    try app.register(collection: LikeController())
+    try app.register(collection: ReportController())
+    try app.register(collection: AdminUserController())
+    try app.register(collection: AdminReportController())
 }
