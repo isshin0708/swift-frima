@@ -55,6 +55,44 @@ struct ItemDetailView: View {
                             RoundedRectangle(cornerRadius: 12)
                         )
                 }
+                
+                // 出品者プロフィール
+                NavigationLink {
+                    ProfileDetailView(
+                        userId: item.userId,
+                        api: api,
+                        auth: auth
+                    )
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.secondary)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("出品者")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            Text("プロフィールを見る")
+                                .font(.headline)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+
+                // 商品名
+                Text(item.name)
+                    .font(.title)
+                    .fontWeight(.bold)
 
                 // 商品名
                 Text(item.name)

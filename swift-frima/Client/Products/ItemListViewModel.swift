@@ -33,12 +33,8 @@ final class ItemListViewModel {
 
     // 検索・ソート後の商品
     var filteredItems: [Item] {
-
-        // 商品名で検索
         let searchedItems: [Item]
-
-        let keyword = searchText
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if keyword.isEmpty {
             searchedItems = items
@@ -48,22 +44,32 @@ final class ItemListViewModel {
             }
         }
 
-        // ソート
-        switch sortOption {
+        // カテゴリで絞り込み
+        let categoryFilteredItems: [Item]
 
+        if selectedCategory == .all {
+            categoryFilteredItems = searchedItems
+        } else {
+            categoryFilteredItems = searchedItems.filter {
+                $0.categoryId == selectedCategory.rawValue
+            }
+        }
+
+        // 並び順
+        switch sortOption {
         case .newest:
-            return searchedItems.sorted {
+            return categoryFilteredItems.sorted {
                 ($0.createdAt ?? .distantPast) >
                 ($1.createdAt ?? .distantPast)
             }
 
         case .priceLowToHigh:
-            return searchedItems.sorted {
+            return categoryFilteredItems.sorted {
                 $0.price < $1.price
             }
 
         case .priceHighToLow:
-            return searchedItems.sorted {
+            return categoryFilteredItems.sorted {
                 $0.price > $1.price
             }
         }
@@ -83,4 +89,31 @@ final class ItemListViewModel {
             errorMessage = error.localizedDescription
         }
     }
+    
+    enum CategoryOption: Int, CaseIterable, Identifiable {
+        case all = 0
+        case game = 1
+        case electronics = 2
+        case fashion = 3
+        case other = 4
+
+        var id: Int { rawValue }
+
+        var name: String {
+            switch self {
+            case .all:
+                return "すべて"
+            case .game:
+                return "ゲーム"
+            case .electronics:
+                return "家電"
+            case .fashion:
+                return "ファッション"
+            case .other:
+                return "その他"
+            }
+        }
+    }
+
+    var selectedCategory: CategoryOption = .all
 }
