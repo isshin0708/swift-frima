@@ -94,6 +94,20 @@ private struct HomeView: View {
                     } label: {
                         Label("プロフィール", systemImage: "person.circle")
                     }
+                
+                if auth.isAdmin {
+                    NavigationLink {
+                        AdminView(
+                            api: api,
+                            auth: auth
+                        )
+                    } label: {
+                        Label(
+                            "管理者画面",
+                            systemImage: "shield"
+                        )
+                    }
+                }
 
             }
 
