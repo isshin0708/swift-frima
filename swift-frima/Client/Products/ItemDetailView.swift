@@ -182,13 +182,14 @@ struct ItemDetailView: View {
                 }
                 
                 // MARK: - 値段交渉・質問
-
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("出品者に相談")
+                    Text(item.userId == authUserId ? "購入希望者とやり取り" : "出品者に相談")
                         .font(.headline)
 
                     TextField(
-                        "価格交渉や質問を入力",
+                        item.userId == authUserId
+                            ? "購入希望者への返信を入力"
+                            : "価格交渉や質問を入力",
                         text: $negotiationMessage,
                         axis: .vertical
                     )
@@ -236,25 +237,41 @@ struct ItemDetailView: View {
                         Text("やり取り")
                             .font(.headline)
 
-                        ForEach(negotiationMessages, id: \.id) { message in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(
-                                    message.senderId == authUserId
-                                    ? "あなた"
-                                    : "出品者"
-                                )
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        VStack(spacing: 8) {
+                            ForEach(negotiationMessages, id: \.id) { message in
+                                let isMine = message.senderId == authUserId
 
-                                Text(message.message)
-                                    .padding(10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(.gray.opacity(0.15))
-                                    )
+                                HStack {
+                                    if isMine {
+                                        Spacer(minLength: 50)
+                                    }
+
+                                    VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
+                                        Text(isMine ? "あなた" : "出品者")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+
+                                        Text(message.message)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 9)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 14)
+                                                    .fill(
+                                                        isMine
+                                                        ? Color.blue.opacity(0.15)
+                                                        : Color.gray.opacity(0.15)
+                                                    )
+                                            )
+                                    }
+
+                                    if !isMine {
+                                        Spacer(minLength: 50)
+                                    }
+                                }
                             }
                         }
                     }
+                    .padding(.vertical, 8)
                 }
 
                 // 購入ボタン
