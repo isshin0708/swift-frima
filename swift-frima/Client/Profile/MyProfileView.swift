@@ -167,9 +167,61 @@ struct MyProfileView: View {
                 )
 
                 Divider()
+                
+                
+                // MARK: - Liked Items
+                VStack(
+                    alignment: .leading,
+                    spacing: 12
+                ) {
+                    Text("いいね")
+                        .font(.title3)
+                        .bold()
+
+                    NavigationLink {
+                        LikedItemsView(
+                            api: api,
+                            auth: auth
+                        )
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "heart.fill")
+                                .font(.title3)
+                                .foregroundStyle(.red)
+
+                            VStack(
+                                alignment: .leading,
+                                spacing: 4
+                            ) {
+                                Text("いいねした商品")
+                                    .font(.headline)
+
+                                Text("いいねした商品を一覧で確認")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.1))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(
+                    maxWidth: .infinity,
+                    alignment: .leading
+                )
+
+                Divider()
 
                 // MARK: - Items
-
                 VStack(
                     alignment: .leading,
                     spacing: 12
@@ -229,6 +281,7 @@ struct MyProfileView: View {
             .padding()
         }
     }
+    
 
     // MARK: - Load Profile
 

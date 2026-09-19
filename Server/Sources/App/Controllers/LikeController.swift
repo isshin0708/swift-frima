@@ -15,6 +15,15 @@ struct LikeController: RouteCollection {
 
         // いいね解除
         items.delete(":itemId", "like", use: unlike)
+        
+        let api = protected.grouped("api")
+
+        api.get(
+            "users",
+            "me",
+            "likes",
+            use: getMyLikedItems
+        )
     }
 
     // MARK: - いいねする
@@ -136,5 +145,76 @@ struct LikeController: RouteCollection {
             isLiked: existingLike != nil,
             likeCount: likeCount
         )
+    }
+    
+    @Sendable
+    func getMyLikedItems(req: Request) async throws -> [LikedItemResponse] {
+        let user = try req.auth.require(AuthenticatedUser.self)
+
+        let likes = try await Like.query(on: req.db)
+            .filter(\.$userId == user.id)
+            .sort(\.$createdAt, .descending)
+            .all()
+
+        var result: [LikedItemResponse] = []
+
+        for like in likes {
+            guard let item = try await ItemModel.query(on: req.db)
+                .filter(\.$id == like.itemId)
+                .first()
+            else {
+                continue
+            }
+
+            guard let itemId = item.id else {
+                continue
+            }
+
+            let response = LikedItemResponse(
+                id: itemId,
+                userId: item.userId,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                manufacturerSuggestedRetailPrice: item.manufacturerSuggestedRetailPrice,
+                referencePrice: item.referencePrice,
+                categoryId: item.categoryId,
+                status: item.status,
+                imageUrl: item.imageUrl,
+                createdAt: item.createdAt
+            )
+
+            result.append(response)
+        }
+
+        return result
+    }
+}
+
+struct LikedItemResponse: Content {
+    let id: UUID
+    let userId: UUID
+    let name: String
+    let description: String
+    let price: Decimal
+    let manufacturerSuggestedRetailPrice: Decimal?
+    let referencePrice: Decimal?
+    let categoryId: Int
+    let status: String
+    let imageUrl: String?
+    let createdAt: Date?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case name
+        case description
+        case price
+        case manufacturerSuggestedRetailPrice = "manufacturer_suggested_retail_price"
+        case referencePrice = "reference_price"
+        case categoryId = "category_id"
+        case status
+        case imageUrl = "image_url"
+        case createdAt = "created_at"
     }
 }
