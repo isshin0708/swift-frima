@@ -3,55 +3,74 @@ import SwiftUI
 struct ItemDetailView: View {
 
     let item: Item
+
     let api: NetworkClient
+
     let auth: AuthViewModel
-    
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var isLiked = false
+
     @State private var likeCount = 0
+
     @State private var isLikeLoading = false
+
     @State private var likeErrorMessage: String?
 
     @State private var showAuthSheet = false
+
     @State private var navigateToCheckout = false
 
     /// ログインシートが閉じた後にやりたかったことを覚えておくためのフラグ
     @State private var pendingActionAfterLogin: PendingAction?
 
     @State private var negotiationMessage = ""
+
     @State private var isSendingNegotiation = false
+
     @State private var negotiationErrorMessage: String?
+
     @State private var negotiationSentMessage: String?
+
     @State private var negotiationMessages: [NegotiationMessage] = []
+
     @State private var isLoadingMessages = false
 
     @State private var showDeleteAlert = false
+
     @State private var isDeleting = false
+
     @State private var deleteErrorMessage: String?
-    
+
     private enum PendingAction {
         case checkout
         case like
     }
 
     var body: some View {
+
         ScrollView {
+
             VStack(alignment: .leading, spacing: 20) {
 
                 // 商品画像
+
                 if let imageUrl = item.imageUrl,
                    let url = URL(string: imageUrl) {
 
                     AsyncImage(url: url) { image in
+
                         image
                             .resizable()
-                            .scaledToFill()
+                            .scaledToFit()
+
                     } placeholder: {
+
                         ProgressView()
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(height: 300)
+                    .frame(height: 220)
                     .clipped()
                     .clipShape(
                         RoundedRectangle(cornerRadius: 12)
@@ -63,7 +82,7 @@ struct ItemDetailView: View {
                         .font(.system(size: 60))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 300)
+                        .frame(height: 220)
                         .background(.gray.opacity(0.1))
                         .clipShape(
                             RoundedRectangle(cornerRadius: 12)
@@ -71,12 +90,15 @@ struct ItemDetailView: View {
                 }
 
                 // 出品者プロフィール
+
                 NavigationLink {
+
                     ProfileDetailView(
                         userId: item.userId,
                         api: api,
                         auth: auth
                     )
+
                 } label: {
 
                     HStack(spacing: 12) {
@@ -107,30 +129,39 @@ struct ItemDetailView: View {
                 Divider()
 
                 // 商品名
+
                 Text(item.name)
                     .font(.title)
                     .fontWeight(.bold)
 
                 // 価格
+
                 Text("¥" + NSDecimalNumber(decimal: item.price).stringValue)
                     .font(.title2)
                     .fontWeight(.bold)
 
                 // いいねボタン
+
                 if item.userId != auth.currentUserId {
+
                     Button {
+
                         Task {
                             await likeItem()
                         }
+
                     } label: {
+
                         HStack {
+
                             Image(
                                 systemName: isLiked
-                                    ? "heart.fill"
-                                    : "heart"
+                                ? "heart.fill"
+                                : "heart"
                             )
 
                             Text("いいね")
+
                             Text("\(likeCount)")
                         }
                         .font(.headline)
@@ -138,13 +169,17 @@ struct ItemDetailView: View {
                     .disabled(isLikeLoading)
 
                     if let likeErrorMessage {
+
                         Text(likeErrorMessage)
                             .font(.caption)
                             .foregroundStyle(.red)
                     }
                 }
+
                 // いいねエラー
+
                 if let likeErrorMessage {
+
                     Text(likeErrorMessage)
                         .font(.caption)
                         .foregroundStyle(.red)
@@ -153,6 +188,7 @@ struct ItemDetailView: View {
                 Divider()
 
                 // 商品説明
+
                 VStack(alignment: .leading, spacing: 8) {
 
                     Text("商品説明")
@@ -163,6 +199,7 @@ struct ItemDetailView: View {
                 }
 
                 // 参考価格
+
                 if let referencePrice = item.referencePrice {
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -180,6 +217,7 @@ struct ItemDetailView: View {
                 }
 
                 // メーカー希望小売価格
+
                 if let suggestedPrice = item.manufacturerSuggestedRetailPrice {
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -197,6 +235,7 @@ struct ItemDetailView: View {
                 }
 
                 // 商品状態
+
                 VStack(alignment: .leading, spacing: 8) {
 
                     Text("商品状態")
@@ -205,8 +244,6 @@ struct ItemDetailView: View {
                     Text(statusText)
                         .foregroundStyle(.secondary)
                 }
-                
-                
 
                 // MARK: - 値段交渉・質問
 
@@ -214,15 +251,15 @@ struct ItemDetailView: View {
 
                     Text(
                         item.userId == auth.currentUserId
-                            ? "購入希望者とやり取り"
-                            : "出品者に相談"
+                        ? "購入希望者とやり取り"
+                        : "出品者に相談"
                     )
                     .font(.headline)
 
                     TextField(
                         item.userId == auth.currentUserId
-                            ? "購入希望者への返信を入力"
-                            : "価格交渉や質問を入力",
+                        ? "購入希望者への返信を入力"
+                        : "価格交渉や質問を入力",
                         text: $negotiationMessage,
                         axis: .vertical
                     )
@@ -230,12 +267,17 @@ struct ItemDetailView: View {
                     .textFieldStyle(.roundedBorder)
 
                     Button {
+
                         Task {
                             await sendNegotiationMessage()
                         }
+
                     } label: {
+
                         HStack {
+
                             if isSendingNegotiation {
+
                                 ProgressView()
                             }
 
@@ -254,12 +296,14 @@ struct ItemDetailView: View {
                     )
 
                     if let negotiationSentMessage {
+
                         Text(negotiationSentMessage)
                             .font(.caption)
                             .foregroundStyle(.green)
                     }
 
                     if let negotiationErrorMessage {
+
                         Text(negotiationErrorMessage)
                             .font(.caption)
                             .foregroundStyle(.red)
@@ -268,12 +312,14 @@ struct ItemDetailView: View {
                 .padding(.vertical, 8)
 
                 if !negotiationMessages.isEmpty {
+
                     VStack(alignment: .leading, spacing: 12) {
 
                         Text("やり取り")
                             .font(.headline)
 
                         VStack(spacing: 8) {
+
                             ForEach(
                                 negotiationMessages,
                                 id: \.id
@@ -290,15 +336,15 @@ struct ItemDetailView: View {
 
                                     VStack(
                                         alignment: isMine
-                                            ? .trailing
-                                            : .leading,
+                                        ? .trailing
+                                        : .leading,
                                         spacing: 4
                                     ) {
 
                                         Text(
                                             isMine
-                                                ? "あなた"
-                                                : "出品者"
+                                            ? "あなた"
+                                            : "出品者"
                                         )
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
@@ -312,8 +358,8 @@ struct ItemDetailView: View {
                                                 )
                                                 .fill(
                                                     isMine
-                                                        ? Color.blue.opacity(0.15)
-                                                        : Color.gray.opacity(0.15)
+                                                    ? Color.blue.opacity(0.15)
+                                                    : Color.gray.opacity(0.15)
                                                 )
                                             )
                                     }
@@ -326,16 +372,25 @@ struct ItemDetailView: View {
                         }
                     }
                 }
+
                 // 購入ボタン
+
                 if item.userId != auth.currentUserId {
+
                     Button {
+
                         if auth.isAuthenticated {
+
                             navigateToCheckout = true
+
                         } else {
+
                             pendingActionAfterLogin = .checkout
                             showAuthSheet = true
                         }
+
                     } label: {
+
                         Text("購入する")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
@@ -348,87 +403,107 @@ struct ItemDetailView: View {
         }
         .navigationTitle("商品詳細")
         .navigationBarTitleDisplayMode(.inline)
-
         .toolbar {
+
             if isMyItem {
+
                 ToolbarItem(placement: .topBarTrailing) {
+
                     Menu {
+
                         NavigationLink {
+
                             ItemEditView(
                                 api: api,
                                 auth: auth,
                                 item: item
                             )
+
                         } label: {
+
                             Label("編集", systemImage: "pencil")
                         }
 
                         Button(role: .destructive) {
+
                             showDeleteAlert = true
+
                         } label: {
+
                             Label("削除", systemImage: "trash")
                         }
 
                     } label: {
+
                         Image(systemName: "ellipsis")
                             .font(.headline)
                     }
                 }
             }
         }
-
         .navigationDestination(isPresented: $navigateToCheckout) {
+
             CheckoutView(
                 item: item,
                 api: api,
                 auth: auth
             )
         }
-
         .sheet(
             isPresented: $showAuthSheet,
             onDismiss: handlePendingActionAfterSheetDismissed
         ) {
+
             AuthView(viewModel: auth)
         }
-
         .onChange(of: auth.isAuthenticated) { _, isAuthenticated in
 
             // ログインが完了したらシートを閉じる。
             // 続きの処理は onDismiss 側
             // (シートが完全に閉じ終わった後)で行う。
+
             if isAuthenticated && showAuthSheet {
+
                 showAuthSheet = false
             }
         }
-
         // 商品詳細を開いたときにいいね状態を取得
         // (ログイン済みの場合のみ)
         .task {
+
             await loadLikeStatus()
         }
-        
         .alert("商品を削除しますか？", isPresented: $showDeleteAlert) {
+
             Button("キャンセル", role: .cancel) {}
 
             Button("削除", role: .destructive) {
+
                 Task {
                     await deleteItem()
                 }
             }
+
         } message: {
+
             Text("削除した商品は元に戻せません。")
         }
-        
         .alert(
             "削除に失敗しました",
             isPresented: Binding(
                 get: { deleteErrorMessage != nil },
-                set: { if !$0 { deleteErrorMessage = nil } }
+                set: {
+                    if !$0 {
+                        deleteErrorMessage = nil
+                    }
+                }
             )
         ) {
+
             Button("OK", role: .cancel) {}
+
         } message: {
+
             Text(deleteErrorMessage ?? "")
         }
     }
@@ -442,6 +517,7 @@ struct ItemDetailView: View {
         }
 
         // ログインせずに手動でシートを閉じた場合は何もしない
+
         guard auth.isAuthenticated else {
             return
         }
@@ -449,14 +525,17 @@ struct ItemDetailView: View {
         switch pendingActionAfterLogin {
 
         case .checkout:
+
             navigateToCheckout = true
 
         case .like:
+
             Task {
                 await likeItem()
             }
 
         case .none:
+
             break
         }
     }
@@ -471,6 +550,7 @@ struct ItemDetailView: View {
 
         // 未ログインならエラーにせず何もしない
         // (ログインしていないだけなので)
+
         guard auth.isAuthenticated else {
             return
         }
@@ -504,6 +584,7 @@ struct ItemDetailView: View {
         }
 
         // 未ログインならログイン画面へ
+
         guard auth.isAuthenticated else {
 
             pendingActionAfterLogin = .like
@@ -516,6 +597,7 @@ struct ItemDetailView: View {
         likeErrorMessage = nil
 
         defer {
+
             isLikeLoading = false
         }
 
@@ -537,6 +619,7 @@ struct ItemDetailView: View {
                 )
 
             } else {
+
                 response = try await api.post(
                     "/api/items/\(itemId)/like",
                     body: EmptyRequest(),
@@ -545,6 +628,7 @@ struct ItemDetailView: View {
             }
 
             // サーバーから返された最新状態を反映
+
             isLiked = response.isLiked
             likeCount = response.likeCount
 
@@ -561,18 +645,23 @@ struct ItemDetailView: View {
         switch item.status {
 
         case .onSale:
+
             return "販売中"
 
         case .soldOut:
+
             return "売り切れ"
 
         case .suspended:
+
             return "販売停止"
 
         case .pendingReview:
+
             return "審査中"
 
         case .reserved:
+
             return "取り置き中"
         }
     }
@@ -628,20 +717,28 @@ struct ItemDetailView: View {
 
         isSendingNegotiation = false
     }
-    
+
     private var isMyItem: Bool {
+
         guard let currentUserId = auth.currentUserId else {
+
             return false
         }
 
         return item.userId == currentUserId
     }
-    
+
     private func deleteItem() async {
-        guard !isDeleting else { return }
+
+        guard !isDeleting else {
+            return
+        }
 
         guard let itemId = item.id else {
-            deleteErrorMessage = "商品IDが取得できません。"
+
+            deleteErrorMessage =
+                "商品IDが取得できません。"
+
             return
         }
 
@@ -649,10 +746,12 @@ struct ItemDetailView: View {
         deleteErrorMessage = nil
 
         defer {
+
             isDeleting = false
         }
 
         do {
+
             let token = try await auth.accessToken()
 
             try await api.deleteNoContent(
@@ -663,7 +762,9 @@ struct ItemDetailView: View {
             dismiss()
 
         } catch {
-            deleteErrorMessage = error.localizedDescription
+
+            deleteErrorMessage =
+                error.localizedDescription
         }
     }
 }
