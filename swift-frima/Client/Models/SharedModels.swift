@@ -54,6 +54,36 @@ public struct ItemCreateResponse: Codable, Sendable {
     public let message: String?
 }
 
+public struct ItemUpdateRequest: Codable, Sendable {
+    public let name: String
+    public let description: String
+    public let price: Decimal
+    public let categoryId: Int
+    public let imageUrl: String?
+
+    public init(
+        name: String,
+        description: String,
+        price: Decimal,
+        categoryId: Int,
+        imageUrl: String?
+    ) {
+        self.name = name
+        self.description = description
+        self.price = price
+        self.categoryId = categoryId
+        self.imageUrl = imageUrl
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case description
+        case price
+        case categoryId = "category_id"
+        case imageUrl = "image_url"
+    }
+}
+
 public struct MarketPriceResult: Codable, Sendable, Equatable {
     public let sampleCount: Int
     public let averageMarketPrice: Decimal?
