@@ -23,7 +23,6 @@ struct ItemDetailView: View {
     @State private var negotiationSentMessage: String?
     @State private var negotiationMessages: [NegotiationMessage] = []
     @State private var isLoadingMessages = false
-    @State private var authUserId: UUID?
 
     private enum PendingAction {
         case checkout
@@ -112,28 +111,32 @@ struct ItemDetailView: View {
                     .fontWeight(.bold)
 
                 // いいねボタン
-                Button {
-                    Task {
-                        await likeItem()
+                if item.userId != auth.currentUserId {
+                    Button {
+                        Task {
+                            await likeItem()
+                        }
+                    } label: {
+                        HStack {
+                            Image(
+                                systemName: isLiked
+                                    ? "heart.fill"
+                                    : "heart"
+                            )
+
+                            Text("いいね")
+                            Text("\(likeCount)")
+                        }
+                        .font(.headline)
                     }
-                } label: {
+                    .disabled(isLikeLoading)
 
-                    HStack {
-
-                        Image(
-                            systemName: isLiked
-                                ? "heart.fill"
-                                : "heart"
-                        )
-
-                        Text("いいね")
-
-                        Text("\(likeCount)")
+                    if let likeErrorMessage {
+                        Text(likeErrorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
                     }
-                    .font(.headline)
                 }
-                .disabled(isLikeLoading)
-
                 // いいねエラー
                 if let likeErrorMessage {
                     Text(likeErrorMessage)
@@ -202,14 +205,14 @@ struct ItemDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
 
                     Text(
-                        item.userId == authUserId
+                        item.userId == auth.currentUserId
                             ? "購入希望者とやり取り"
                             : "出品者に相談"
                     )
                     .font(.headline)
 
                     TextField(
-                        item.userId == authUserId
+                        item.userId == auth.currentUserId
                             ? "購入希望者への返信を入力"
                             : "価格交渉や質問を入力",
                         text: $negotiationMessage,
@@ -223,9 +226,7 @@ struct ItemDetailView: View {
                             await sendNegotiationMessage()
                         }
                     } label: {
-
                         HStack {
-
                             if isSendingNegotiation {
                                 ProgressView()
                             }
@@ -245,14 +246,12 @@ struct ItemDetailView: View {
                     )
 
                     if let negotiationSentMessage {
-
                         Text(negotiationSentMessage)
                             .font(.caption)
                             .foregroundStyle(.green)
                     }
 
                     if let negotiationErrorMessage {
-
                         Text(negotiationErrorMessage)
                             .font(.caption)
                             .foregroundStyle(.red)
@@ -261,21 +260,19 @@ struct ItemDetailView: View {
                 .padding(.vertical, 8)
 
                 if !negotiationMessages.isEmpty {
-
                     VStack(alignment: .leading, spacing: 12) {
 
                         Text("やり取り")
                             .font(.headline)
 
                         VStack(spacing: 8) {
-
                             ForEach(
                                 negotiationMessages,
                                 id: \.id
                             ) { message in
 
                                 let isMine =
-                                    message.senderId == authUserId
+                                    message.senderId == auth.currentUserId
 
                                 HStack {
 
@@ -321,31 +318,43 @@ struct ItemDetailView: View {
                         }
                     }
                 }
-
                 // 購入ボタン
-                Button {
-
-                    if auth.isAuthenticated {
-                        navigateToCheckout = true
-                    } else {
-                        pendingActionAfterLogin = .checkout
-                        showAuthSheet = true
+                if item.userId != auth.currentUserId {
+                    Button {
+                        if auth.isAuthenticated {
+                            navigateToCheckout = true
+                        } else {
+                            pendingActionAfterLogin = .checkout
+                            showAuthSheet = true
+                        }
+                    } label: {
+                        Text("購入する")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
                     }
-
-                } label: {
-
-                    Text("購入する")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
             }
             .padding()
         }
         .navigationTitle("商品詳細")
         .navigationBarTitleDisplayMode(.inline)
-
+        .toolbar {
+            if item.userId == auth.currentUserId {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        ItemEditView(
+                            api: api,
+                            auth: auth,
+                            item: item
+                        )
+                    } label: {
+                        Text("編集")
+                    }
+                }
+            }
+        }
         .navigationDestination(isPresented: $navigateToCheckout) {
             CheckoutView(
                 item: item,
