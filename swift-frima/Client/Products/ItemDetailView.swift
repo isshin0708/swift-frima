@@ -5,6 +5,8 @@ struct ItemDetailView: View {
     let item: Item
     let api: NetworkClient
     let auth: AuthViewModel
+    
+    @Environment(\.dismiss) private var dismiss
 
     @State private var isLiked = false
     @State private var likeCount = 0
@@ -24,6 +26,10 @@ struct ItemDetailView: View {
     @State private var negotiationMessages: [NegotiationMessage] = []
     @State private var isLoadingMessages = false
 
+    @State private var showDeleteAlert = false
+    @State private var isDeleting = false
+    @State private var deleteErrorMessage: String?
+    
     private enum PendingAction {
         case checkout
         case like
@@ -199,6 +205,8 @@ struct ItemDetailView: View {
                     Text(statusText)
                         .foregroundStyle(.secondary)
                 }
+                
+                
 
                 // MARK: - 値段交渉・質問
 
@@ -340,21 +348,35 @@ struct ItemDetailView: View {
         }
         .navigationTitle("商品詳細")
         .navigationBarTitleDisplayMode(.inline)
+
         .toolbar {
-            if item.userId == auth.currentUserId {
+            if isMyItem {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        ItemEditView(
-                            api: api,
-                            auth: auth,
-                            item: item
-                        )
+                    Menu {
+                        NavigationLink {
+                            ItemEditView(
+                                api: api,
+                                auth: auth,
+                                item: item
+                            )
+                        } label: {
+                            Label("編集", systemImage: "pencil")
+                        }
+
+                        Button(role: .destructive) {
+                            showDeleteAlert = true
+                        } label: {
+                            Label("削除", systemImage: "trash")
+                        }
+
                     } label: {
-                        Text("編集")
+                        Image(systemName: "ellipsis")
+                            .font(.headline)
                     }
                 }
             }
         }
+
         .navigationDestination(isPresented: $navigateToCheckout) {
             CheckoutView(
                 item: item,
@@ -384,6 +406,30 @@ struct ItemDetailView: View {
         // (ログイン済みの場合のみ)
         .task {
             await loadLikeStatus()
+        }
+        
+        .alert("商品を削除しますか？", isPresented: $showDeleteAlert) {
+            Button("キャンセル", role: .cancel) {}
+
+            Button("削除", role: .destructive) {
+                Task {
+                    await deleteItem()
+                }
+            }
+        } message: {
+            Text("削除した商品は元に戻せません。")
+        }
+        
+        .alert(
+            "削除に失敗しました",
+            isPresented: Binding(
+                get: { deleteErrorMessage != nil },
+                set: { if !$0 { deleteErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(deleteErrorMessage ?? "")
         }
     }
 
@@ -586,5 +632,43 @@ struct ItemDetailView: View {
         }
 
         isSendingNegotiation = false
+    }
+    
+    private var isMyItem: Bool {
+        guard let currentUserId = auth.currentUserId else {
+            return false
+        }
+
+        return item.userId == currentUserId
+    }
+    
+    private func deleteItem() async {
+        guard !isDeleting else { return }
+
+        guard let itemId = item.id else {
+            deleteErrorMessage = "商品IDが取得できません。"
+            return
+        }
+
+        isDeleting = true
+        deleteErrorMessage = nil
+
+        defer {
+            isDeleting = false
+        }
+
+        do {
+            let token = try await auth.accessToken()
+
+            try await api.deleteNoContent(
+                "/api/items/\(itemId.uuidString)",
+                authToken: token
+            )
+
+            dismiss()
+
+        } catch {
+            deleteErrorMessage = error.localizedDescription
+        }
     }
 }

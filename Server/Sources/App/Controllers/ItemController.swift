@@ -18,7 +18,12 @@ struct ItemController: RouteCollection {
         // 商品編集
         routes
             .grouped(SupabaseAuthMiddleware())
-            .patch("api", "items", ":id", use: update)
+            .patch("api", "items", ":itemId", use: update)
+        
+        //商品削除
+        routes
+            .grouped(SupabaseAuthMiddleware())
+            .delete("api", "items", ":itemId", use: delete)
     }
 
     func list(req: Request) async throws -> [Item] {
@@ -70,7 +75,7 @@ struct ItemController: RouteCollection {
         let user = try req.auth.require(AuthenticatedUser.self)
 
         // 商品ID
-        guard let idString = req.parameters.get("id"),
+        guard let idString = req.parameters.get("itemId"),
               let itemId = UUID(uuidString: idString) else {
             throw Abort(.badRequest, reason: "商品IDが不正です")
         }
@@ -148,6 +153,32 @@ struct ItemController: RouteCollection {
         try await item.save(on: req.db)
 
         return Self.toItem(item)
+    }
+    
+    @Sendable
+    func delete(req: Request) async throws -> HTTPStatus {
+        let user = try req.auth.require(AuthenticatedUser.self)
+
+        guard let idString = req.parameters.get("itemId"),
+              let itemId = UUID(uuidString: idString) else {
+            throw Abort(.badRequest, reason: "商品IDが不正です")
+        }
+
+        guard let item = try await ItemModel.query(on: req.db)
+            .filter(\.$id == itemId)
+            .first()
+        else {
+            throw Abort(.notFound, reason: "商品が見つかりません")
+        }
+
+        // 自分の商品だけ削除可能
+        guard item.userId == user.id else {
+            throw Abort(.forbidden, reason: "この商品を削除する権限がありません")
+        }
+
+        try await item.delete(on: req.db)
+
+        return .noContent
     }
 
     private static func toItem(_ record: ItemModel) -> Item {
