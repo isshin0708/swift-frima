@@ -537,11 +537,6 @@ struct ItemDetailView: View {
                 )
 
             } else {
-
-                // ==========================================
-                // まだいいねしていない → いいね
-                // ==========================================
-
                 response = try await api.post(
                     "/api/items/\(itemId)/like",
                     body: EmptyRequest(),
