@@ -56,39 +56,60 @@ struct ItemDetailView: View {
 
                 // 商品画像
 
+                // 商品画像
                 if let imageUrl = item.imageUrl,
                    let url = URL(string: imageUrl) {
 
-                    AsyncImage(url: url) { image in
+                    AsyncImage(url: url) { phase in
+                        switch phase {
 
-                        image
-                            .resizable()
-                            .scaledToFit()
+                        case .empty:
+                            ZStack {
+                                Color.gray.opacity(0.1)
+                                ProgressView()
+                            }
+                            .frame(width: 280, height: 280)
 
-                    } placeholder: {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 280, height: 280)
+                                .clipped()
 
-                        ProgressView()
+                        case .failure:
+                            ZStack {
+                                Color.gray.opacity(0.1)
+
+                                Image(systemName: "photo")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(width: 280, height: 280)
+
+                        @unknown default:
+                            EmptyView()
+                        }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 220)
-                    .clipped()
                     .clipShape(
                         RoundedRectangle(cornerRadius: 12)
                     )
+                    .frame(maxWidth: .infinity)
 
                 } else {
 
                     Image(systemName: "photo")
-                        .font(.system(size: 60))
+                        .font(.largeTitle)
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 220)
-                        .background(.gray.opacity(0.1))
+                        .frame(width: 280, height: 280)
+                        .background(
+                            Color.gray.opacity(0.1)
+                        )
                         .clipShape(
                             RoundedRectangle(cornerRadius: 12)
                         )
+                        .frame(maxWidth: .infinity)
                 }
-
                 // 出品者プロフィール
 
                 NavigationLink {

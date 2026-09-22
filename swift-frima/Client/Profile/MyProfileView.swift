@@ -246,27 +246,20 @@ struct MyProfileView: View {
 
                         LazyVGrid(
                             columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
+                                GridItem(.flexible(), spacing: 12),
+                                GridItem(.flexible(), spacing: 12)
                             ],
-                            spacing: 12
+                            spacing: 16
                         ) {
-
                             ForEach(items) { item in
-
                                 NavigationLink {
-
                                     ItemDetailView(
                                         item: item,
                                         api: api,
                                         auth: auth
                                     )
-
                                 } label: {
-
-                                    ItemCardView(
-                                        item: item
-                                    )
+                                    ItemCardView(item: item)
                                 }
                                 .buttonStyle(.plain)
                             }

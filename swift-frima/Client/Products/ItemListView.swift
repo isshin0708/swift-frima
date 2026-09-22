@@ -18,10 +18,11 @@ struct ItemListView: View {
             initialValue: ItemListViewModel(api: api)
         )
     }
-    
 
     var body: some View {
+
         Group {
+
             if viewModel.isLoading {
 
                 ProgressView("商品を読み込み中...")
@@ -29,6 +30,7 @@ struct ItemListView: View {
             } else if let errorMessage = viewModel.errorMessage {
 
                 VStack(spacing: 12) {
+
                     Text("商品の取得に失敗しました")
                         .font(.headline)
 
@@ -55,7 +57,9 @@ struct ItemListView: View {
             prompt: "商品名で検索"
         )
         .toolbar {
+
             ToolbarItem(placement: .topBarTrailing) {
+
                 Menu {
 
                     // カテゴリ
@@ -63,9 +67,11 @@ struct ItemListView: View {
                         "カテゴリ",
                         selection: $viewModel.selectedCategory
                     ) {
+
                         ForEach(
                             ItemListViewModel.CategoryOption.allCases
                         ) { category in
+
                             Text(category.name)
                                 .tag(category)
                         }
@@ -78,16 +84,22 @@ struct ItemListView: View {
                         "並び順",
                         selection: $viewModel.sortOption
                     ) {
+
                         ForEach(
                             ItemListViewModel.SortOption.allCases
                         ) { option in
+
                             Text(option.rawValue)
                                 .tag(option)
                         }
                     }
 
                 } label: {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
+
+                    Image(
+                        systemName:
+                            "line.3.horizontal.decrease.circle"
+                    )
                 }
             }
         }
@@ -95,6 +107,8 @@ struct ItemListView: View {
             await viewModel.fetchItems()
         }
     }
+
+    // MARK: - Product List
 
     private var productList: some View {
 
@@ -115,20 +129,46 @@ struct ItemListView: View {
         } else {
 
             return AnyView(
-                List(viewModel.filteredItems) { item in
 
-                    NavigationLink {
+                ScrollView {
 
-                        ItemDetailView(
-                            item: item,
-                            api: api,
-                            auth: auth
-                        )
+                    LazyVGrid(
+                        columns: [
+                            GridItem(
+                                .flexible(),
+                                spacing: 12
+                            ),
+                            GridItem(
+                                .flexible(),
+                                spacing: 12
+                            )
+                        ],
+                        spacing: 16
+                    ) {
 
-                    } label: {
+                        ForEach(
+                            viewModel.filteredItems
+                        ) { item in
 
-                        ItemCardView(item: item)
+                            NavigationLink {
+
+                                ItemDetailView(
+                                    item: item,
+                                    api: api,
+                                    auth: auth
+                                )
+
+                            } label: {
+
+                                ItemCardView(
+                                    item: item
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
             )
         }
