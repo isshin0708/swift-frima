@@ -11,25 +11,57 @@ struct ItemCardView: View {
             if let imageUrl = item.imageUrl,
                let url = URL(string: imageUrl) {
 
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    ProgressView()
+                GeometryReader { geometry in
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ZStack {
+                                Color.gray.opacity(0.1)
+                                ProgressView()
+                            }
+
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+
+                        case .failure:
+                            ZStack {
+                                Color.gray.opacity(0.1)
+
+                                Image(systemName: "photo")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(.secondary)
+                            }
+
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .frame(
+                        width: geometry.size.width,
+                        height: geometry.size.width
+                    )
+                    .clipped()
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: 12)
+                    )
                 }
-                .frame(height: 180)
-                .frame(maxWidth: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .aspectRatio(1, contentMode: .fit)
 
             } else {
+
                 Image(systemName: "photo")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                    .frame(height: 180)
                     .frame(maxWidth: .infinity)
-                    .background(.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .aspectRatio(1, contentMode: .fit)
+                    .background(
+                        Color.gray.opacity(0.1)
+                    )
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: 12)
+                    )
             }
 
             // 商品名
@@ -38,8 +70,12 @@ struct ItemCardView: View {
                 .lineLimit(2)
 
             // 価格
-            Text("¥" + NSDecimalNumber(decimal: item.price).stringValue)
-                .font(.title3.bold())
+            Text(
+                "¥" + NSDecimalNumber(
+                    decimal: item.price
+                ).stringValue
+            )
+            .font(.title3.bold())
 
             // 商品説明
             Text(item.description)
@@ -47,6 +83,7 @@ struct ItemCardView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 8)
     }
 }
